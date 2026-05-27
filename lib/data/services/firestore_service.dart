@@ -243,7 +243,7 @@ class FirestoreService {
       if (!rewardDoc.exists) return {'success': false, 'message': 'Premio non trovato'};
       
       final rewardData = rewardDoc.data()!;
-      final pointsCost = rewardData['pointsCost'] as int;
+      final pointsCost = ((rewardData['pointsCost'] ?? rewardData['pointsRequired'] ?? 0) as num).toInt();
       final rewardTitle = rewardData['title'] as String;
 
       final userRef = _db.collection('users').doc(clientId);
