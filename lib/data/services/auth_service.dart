@@ -153,26 +153,32 @@ class AuthService {
     AuthCredential? credential;
     try {
       print('--- STARTING GOOGLE SIGN IN ---');
-      googleUser = await GoogleSignIn(
-        clientId: kIsWeb ? '114612287389-6v8r79tmp4tqot1jmh0kosgdmd8clrtt.apps.googleusercontent.com' : null,
-      ).signIn();
-      
-      print('Google User: ${googleUser?.email}');
-      if (googleUser == null) {
-        print('--- L\'utente ha annullato il login o l\'API ha fallito silenziosamente ---');
-        return null;
+      UserCredential userCredential;
+
+      if (kIsWeb) {
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        userCredential = await _auth.signInWithPopup(googleProvider);
+        print('Firebase Auth credential created successfully (Web Popup)');
+      } else {
+        googleUser = await GoogleSignIn().signIn();
+        
+        print('Google User: ${googleUser?.email}');
+        if (googleUser == null) {
+          print('--- L\'utente ha annullato il login o l\'API ha fallito silenziosamente ---');
+          return null;
+        }
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        print('Google Auth retrieved successfully');
+        
+        credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        userCredential = await _auth.signInWithCredential(credential);
+        print('Firebase Auth credential created successfully');
       }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      print('Google Auth retrieved successfully');
-      
-      credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-      print('Firebase Auth credential created successfully');
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) return null;
@@ -245,10 +251,14 @@ class AuthService {
       print('Stacktrace: $stacktrace');
       print('-----------------------------------');
       if (e.code == 'account-exists-with-different-credential') {
-        throw NeedsPasswordForLinkingException(
-          credential!,
-          googleUser!.email,
-        );
+        final email = googleUser?.email ?? e.email ?? '';
+        final cred = credential ?? e.credential;
+        if (cred != null) {
+          throw NeedsPasswordForLinkingException(
+            cred,
+            email,
+          );
+        }
       }
       throw _mapFirebaseAuthError(e);
     } catch (e, stacktrace) {

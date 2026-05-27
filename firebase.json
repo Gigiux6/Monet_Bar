@@ -1,1 +1,16 @@
-{"firestore":{"rules":"firestore.rules"},"flutter":{"platforms":{"android":{"default":{"projectId":"monet-bar","appId":"1:114612287389:android:ebe0107c7c0352034e2174","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"monet-bar","configurations":{"android":"1:114612287389:android:ebe0107c7c0352034e2174","ios":"1:114612287389:ios:9689a143b74fb5ff4e2174","web":"1:114612287389:web:f6976c252a861ead4e2174"}}}}}}
+{
+    "hosting": {
+        "public": "build/web",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ]
+    }
+}
