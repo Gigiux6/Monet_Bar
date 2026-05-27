@@ -1,17 +1,34 @@
-# monet
+# Monet Bar
 
-A new Flutter project.
+**Monet Bar** è un'applicazione mobile innovativa sviluppata in Flutter e Firebase, pensata per modernizzare l'interazione tra bar e clienti tramite un sistema digitale di fidelity card, premi e gestione del menu.
 
-## Getting Started
+## 🌟 Funzionalità Principali
 
-This project is a starting point for a Flutter application.
+### 👥 Lato Cliente
+* **Registrazione e Accesso:** Creazione di un profilo personale.
+* **Dashboard Punti:** Visualizzazione in tempo reale dei punti fedeltà accumulati.
+* **Menu Digitale:** Consultazione del menu del bar direttamente dall'app.
+* **Riscatto Premi:** Possibilità di convertire i punti in fantastici premi generando un comodo codice QR dinamico.
 
-A few resources to get you started if this is your first Flutter project:
+### 👑 Lato Admin (Gestore del Bar)
+* **Pannello di Controllo:** Dashboard dedicata con statistiche.
+* **Gestione Punti:** Modulo integrato per accreditare o scalare punti ai clienti.
+* **Gestione Catalogo:** Strumento per inserire, modificare e rimuovere i prodotti del Menu e i Premi sbloccabili.
+* **Scanner QR Integrato:** Una fotocamera nell'app per scannerizzare il QR Code mostrato dal cliente per convalidare in sicurezza l'erogazione del premio e la rimozione automatica dei punti spesi.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 🛠️ Stack Tecnologico
+* **Frontend:** [Flutter](https://flutter.dev) (Dart)
+* **Backend:** [Firebase](https://firebase.google.com/) (Authentication, Cloud Firestore)
+* **Librerie Chiave:** 
+  * `qr_flutter` per la generazione dei QR.
+  * `mobile_scanner` per la lettura dei QR lato admin.
+  * `google_fonts` per il design tipografico moderno e accattivante.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Come iniziare
+1. Clona il repository.
+2. Assicurati di aver configurato il tuo progetto Firebase e di avere i file di configurazione validi (`google-services.json` per Android, `GoogleService-Info.plist` per iOS).
+3. Esegui `flutter pub get` per scaricare le dipendenze.
+4. Esegui l'app con `flutter run` o compila la versione di release con `flutter build apk`.
+
+## 🎨 Design
+L'applicazione è caratterizzata da un tema premium "Dark Glassmorphism", con sfumature eleganti in toni di nero, ambra e oro per dare una sensazione di lusso e modernità all'utente fin dal primo accesso.

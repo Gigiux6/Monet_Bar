@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Large files
+FILE AGGIUNTIVI/
+*.mp3
+*.wav
+*.zip
+*.exe
+build/
+.dart_tool/
+.firebase/
