@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 
 /// Custom exception for account linking
@@ -153,7 +154,7 @@ class AuthService {
     try {
       print('--- STARTING GOOGLE SIGN IN ---');
       googleUser = await GoogleSignIn(
-        clientId: '114612287389-6v8r79tmp4tqot1jmh0kosgdmd8clrtt.apps.googleusercontent.com',
+        clientId: kIsWeb ? '114612287389-6v8r79tmp4tqot1jmh0kosgdmd8clrtt.apps.googleusercontent.com' : null,
       ).signIn();
       
       print('Google User: ${googleUser?.email}');
