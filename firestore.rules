@@ -36,12 +36,12 @@ service cloud.firestore {
       match /coupons/{couponId} {
         allow read: if isOwner(userId) || isAdmin();
         
-        allow create: if isOwner(userId) 
-          && request.resource.data.status == 'active';
+        allow create: if isAdmin() || (isOwner(userId) 
+          && request.resource.data.status == 'active');
           
-        allow update: if isOwner(userId) 
+        allow update: if isAdmin() || (isOwner(userId) 
           && resource.data.status == 'active' 
-          && request.resource.data.status == 'used';
+          && request.resource.data.status == 'used');
           
         allow delete: if isAdmin();
       }
@@ -74,8 +74,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       
       allow create: if isAuthenticated() 
-        && request.resource.data.userId == request.auth.uid 
-        && request.resource.data.status == 'active';
+        && (isAdmin() || (request.resource.data.userId == request.auth.uid && request.resource.data.status == 'active'));
         
       allow update: if isAuthenticated() 
         && (resource.data.userId == request.auth.uid || isAdmin()) 
