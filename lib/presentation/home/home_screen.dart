@@ -5,9 +5,13 @@ import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../widgets/app_bar_logo.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onGoToRewards;
+  const HomeScreen({super.key, this.onGoToRewards});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,15 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late final Stream<dynamic> _userStream;
   late final Stream<QuerySnapshot> _newsStream;
 
-  @override
-  void initState() {
-    super.initState();
-    _userStream = AuthService().userStateChanges;
-    _newsStream = FirebaseFirestore.instance
-        .collection('news')
-        .where('is_active', isEqualTo: true)
-        .snapshots();
-
+  void _startPromoTimer() {
+    _promoTimer?.cancel();
     _promoTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (!mounted || _promoLength <= 1) return;
       setState(() {
@@ -43,6 +40,18 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       });
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _userStream = AuthService().userStateChanges;
+    _newsStream = FirebaseFirestore.instance
+        .collection('news')
+        .where('is_active', isEqualTo: true)
+        .snapshots();
+
+    _startPromoTimer();
   }
 
   @override
@@ -63,6 +72,28 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _launchInstagram() async {
+    final Uri url = Uri.parse('https://www.instagram.com/pasticceriamonet?igsh=MXhlcXJ5c3kwbGhu');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile aprire Instagram')),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchFacebook() async {
+    final Uri url = Uri.parse('https://www.facebook.com/monetpasticceria/?locale=it_IT');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile aprire Facebook')),
+        );
+      }
+    }
   }
 
   @override
@@ -110,32 +141,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         // Top Right Logo Asset
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.cardDark,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.accentGold.withOpacity(0.3), width: 1.5),
-                          ),
-                          child: Image.asset(
-                            'assets/logo.png',
-                            width: 38,
-                            height: 38,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.local_bar,
-                              color: AppTheme.accentGold,
-                              size: 24,
-                            ),
-                          ),
-                        ),
+                        const AppBarLogo(),
                       ],
                     ),
                     const SizedBox(height: 24),
 
                     // Quick fidelity overview
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: AppTheme.goldGradientCard(),
+                    GestureDetector(
+                      onTap: widget.onGoToRewards,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: AppTheme.goldGradientCard(),
                       child: Row(
                         children: [
                           Expanded(
@@ -187,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
+                    ),
                     ),
                     const SizedBox(height: 28),
 
@@ -243,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   setState(() {
                                     _currentPromoPage = index;
                                   });
+                                  _startPromoTimer();
                                 },
                                 itemBuilder: (context, index) {
                                   final realIndex = index % docs.length;
@@ -487,15 +505,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const VerticalDivider(color: Colors.white24, width: 2),
                           IconButton(
-                            icon: const Icon(Icons.email, color: AppTheme.accentGold),
-                            tooltip: 'Invia Email',
-                            onPressed: () => _showMockAction('Apertura client mail per info@monetbar.it...'),
+                            icon: const FaIcon(FontAwesomeIcons.facebook, color: AppTheme.accentGold),
+                            tooltip: 'Facebook',
+                            onPressed: _launchFacebook,
                           ),
                           const VerticalDivider(color: Colors.white24, width: 2),
                           IconButton(
-                            icon: const Icon(Icons.language, color: AppTheme.accentGold),
-                            tooltip: 'Sito Web',
-                            onPressed: () => _showMockAction('Apertura browser su www.monetbar.it...'),
+                            icon: const FaIcon(FontAwesomeIcons.instagram, color: AppTheme.accentGold),
+                            tooltip: 'Instagram',
+                            onPressed: _launchInstagram,
                           ),
                         ],
                       ),

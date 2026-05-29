@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/firestore_service.dart';
+import '../../data/models/coupon_model.dart';
+import '../widgets/app_bar_logo.dart';
 import '../login_screen.dart';
 import 'qr_scanner_screen.dart';
 
@@ -228,7 +230,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             onPressed: _handleLogout,
             tooltip: 'Logout',
-          )
+          ),
+          const AppBarLogo(),
         ],
       ),
       body: SafeArea(

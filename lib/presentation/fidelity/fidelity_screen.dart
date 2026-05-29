@@ -8,6 +8,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/firestore_service.dart';
 import '../rewards/coupon_detail_screen.dart';
 import '../login_screen.dart';
+import '../widgets/app_bar_logo.dart';
 
 class FidelityScreen extends StatefulWidget {
   const FidelityScreen({super.key});
@@ -45,21 +46,8 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
           ),
         ),
         centerTitle: true,
-        actions: [
-          // Logo
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Image.asset(
-              'assets/logo.png',
-              width: 32,
-              height: 32,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.local_bar,
-                color: AppTheme.accentGold,
-                size: 24,
-              ),
-            ),
-          ),
+        actions: const [
+          AppBarLogo(),
         ],
       ),
       body: StreamBuilder(
@@ -283,58 +271,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                   ),
                   const SizedBox(height: 28),
 
-                  // Coupon Section (Tabbed view)
-                  Text(
-                    'I Miei Coupon',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 20),
-                  ),
-                  const SizedBox(height: 12),
 
-                  // Tab Bar for Coupons
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.cardDark,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        color: AppTheme.accentGold,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      labelColor: AppTheme.backgroundDark,
-                      unselectedLabelColor: AppTheme.textSecondary,
-                      labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                      tabs: const [
-                        Tab(text: 'Attivi'),
-                        Tab(text: 'Utilizzati'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Coupon List View (Constrained height based on items)
-                  StreamBuilder<List<Coupon>>(
-                    stream: FirestoreService().couponsStream,
-                    builder: (context, couponSnapshot) {
-                      final coupons = couponSnapshot.data ?? [];
-                      
-                      final activeCoupons = coupons.where((c) => c.status == 'active').toList();
-                      final usedCoupons = coupons.where((c) => c.status == 'used').toList();
-
-                      return SizedBox(
-                        height: 220,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _buildCouponList(activeCoupons, true),
-                            _buildCouponList(usedCoupons, false),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
 
                   // Point Transactions Logs
                   Row(
@@ -370,7 +307,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: txList.length > 5 ? 5 : txList.length, // Show up to 5 transactions
+                        itemCount: txList.length > 10 ? 10 : txList.length, // Show up to 10 transactions
                         itemBuilder: (context, index) {
                           final tx = txList[index];
                           final isAdd = tx.type == 'add';
@@ -447,93 +384,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildCouponList(List<Coupon> coupons, bool isActive) {
-    if (coupons.isEmpty) {
-      return Center(
-        child: Text(
-          isActive ? 'Nessun coupon attivo da riscattare.' : 'Ancora nessun coupon utilizzato.',
-          style: GoogleFonts.outfit(color: AppTheme.textMuted, fontSize: 13),
-        ),
-      );
-    }
 
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      itemCount: coupons.length,
-      itemBuilder: (context, index) {
-        final coupon = coupons[index];
-
-        return Container(
-          width: 160,
-          margin: const EdgeInsets.only(right: 12, top: 4, bottom: 8),
-          decoration: AppTheme.glassCard(
-            borderColor: isActive ? AppTheme.accentGold.withOpacity(0.3) : AppTheme.textMuted.withOpacity(0.2),
-          ),
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CouponDetailScreen(coupon: coupon),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(
-                        isActive ? Icons.confirmation_number : Icons.check_circle,
-                        color: isActive ? AppTheme.accentGold : AppTheme.textMuted,
-                        size: 20,
-                      ),
-                      Text(
-                        '${coupon.pointsSpent} pt',
-                        style: GoogleFonts.outfit(
-                          color: isActive ? AppTheme.accentAmber : AppTheme.textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    coupon.rewardTitle,
-                    style: GoogleFonts.playfairDisplay(
-                      color: isActive ? AppTheme.textCream : AppTheme.textMuted,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  const Divider(color: Colors.white10, height: 8),
-                  Text(
-                    isActive
-                        ? 'Scade il: ${coupon.expiryDate.day}/${coupon.expiryDate.month}'
-                        : 'Utilizzato',
-                    style: GoogleFonts.outfit(
-                      color: isActive ? AppTheme.textSecondary : AppTheme.textMuted,
-                      fontSize: 10,
-                      fontWeight: isActive ? FontWeight.w500 : FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Future<void> _showEditUsernameDialog(BuildContext context, String currentUsername) async {
     final TextEditingController controller = TextEditingController(text: currentUsername);

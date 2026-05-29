@@ -6,6 +6,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/firestore_service.dart';
 import '../../data/models/user_model.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../widgets/app_bar_logo.dart';
 
 
 class RewardsScreen extends StatefulWidget {
@@ -108,6 +109,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
           ),
         ),
         centerTitle: true,
+        actions: const [AppBarLogo()],
       ),
       body: Stack(
         children: [

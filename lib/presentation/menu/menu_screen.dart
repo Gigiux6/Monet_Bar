@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/menu_model.dart';
 import '../../data/services/firestore_service.dart';
+import '../widgets/app_bar_logo.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -244,6 +245,7 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         ),
         centerTitle: true,
+        actions: const [AppBarLogo()],
       ),
       body: Column(
         children: [

@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/services/firestore_service.dart';
 import '../../data/models/menu_model.dart';
 import '../../data/models/reward_model.dart';
+import '../widgets/app_bar_logo.dart';
 
 class AdminMenuSettingsScreen extends StatelessWidget {
   const AdminMenuSettingsScreen({super.key});
@@ -24,6 +25,7 @@ class AdminMenuSettingsScreen extends StatelessWidget {
             ),
           ),
           centerTitle: true,
+          actions: const [AppBarLogo()],
           bottom: const TabBar(
             indicatorColor: AppTheme.accentGold,
             labelColor: AppTheme.accentGold,

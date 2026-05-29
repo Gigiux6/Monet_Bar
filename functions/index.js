@@ -3,10 +3,10 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-// Usiamo la sintassi Gen 2 che supporta nativamente i database eur3 senza conflitti
-exports.sendNewsNotification = onDocumentCreated(
+// Listener per l'invio manuale delle notifiche
+exports.sendManualNotification = onDocumentCreated(
   {
-    document: "news/{newsId}"
+    document: "notification_requests/{reqId}"
   },
   async (event) => {
     const snapshot = event.data;
@@ -16,12 +16,6 @@ exports.sendNewsNotification = onDocumentCreated(
     }
 
     const data = snapshot.data();
-
-    // Se is_active è false fin dall'inizio, saltiamo l'invio
-    if (data.is_active === false) {
-      console.log("News is not active, skipping notification.");
-      return null;
-    }
 
     const payload = {
       notification: {
@@ -37,7 +31,9 @@ exports.sendNewsNotification = onDocumentCreated(
 
     try {
       const response = await admin.messaging().send(payload);
-      console.log("Successfully sent notification to all_users:", response);
+      console.log("Successfully sent manual notification to all_users:", response);
+      // Puliamo la richiesta dopo averla evasa
+      await snapshot.ref.delete();
     } catch (error) {
       console.error("Error sending notification:", error);
     }

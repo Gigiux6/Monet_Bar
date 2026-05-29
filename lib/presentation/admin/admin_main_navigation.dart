@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_menu_settings_screen.dart';
 import 'admin_news_screen.dart';
+import '../settings/admin_settings_screen.dart';
 
 class AdminMainNavigation extends StatefulWidget {
   const AdminMainNavigation({super.key});
@@ -18,6 +19,7 @@ class _AdminMainNavigationState extends State<AdminMainNavigation> {
     const AdminDashboardScreen(),
     const AdminMenuSettingsScreen(),
     const AdminNewsScreen(),
+    const AdminSettingsScreen(),
   ];
 
   @override
@@ -47,6 +49,10 @@ class _AdminMainNavigationState extends State<AdminMainNavigation> {
           BottomNavigationBarItem(
             icon: Icon(Icons.campaign),
             label: 'Novità',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Impostazioni',
           ),
         ],
       ),

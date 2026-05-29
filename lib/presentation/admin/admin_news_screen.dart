@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/app_bar_logo.dart';
 
 class AdminNewsScreen extends StatefulWidget {
   const AdminNewsScreen({super.key});
@@ -81,6 +82,40 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
               Navigator.pop(ctx);
             },
             child: Text('Elimina', style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmSendNotification(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceDark,
+        title: Text('Invia Notifica', style: GoogleFonts.playfairDisplay(color: AppTheme.textCream)),
+        content: Text('Vuoi davvero inviare una notifica push a tutti gli utenti per questa promozione?', style: GoogleFonts.outfit(color: AppTheme.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annulla', style: GoogleFonts.outfit(color: AppTheme.textMuted)),
+          ),
+          TextButton(
+            onPressed: () {
+              FirebaseFirestore.instance.collection('notification_requests').add({
+                'titolo': title,
+                'contenuto': content,
+                'timestamp': FieldValue.serverTimestamp(),
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Notifica in invio...', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppTheme.backgroundDark)),
+                  backgroundColor: AppTheme.accentGold,
+                )
+              );
+            },
+            child: Text('Invia', style: GoogleFonts.outfit(color: AppTheme.accentAmber, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -185,6 +220,10 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
                     },
                   ),
                   IconButton(
+                    icon: const Icon(Icons.notifications_active, color: AppTheme.accentAmber),
+                    onPressed: () => _confirmSendNotification(title, content),
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                     onPressed: () => _confirmDelete(doc.id),
                   ),
@@ -208,6 +247,7 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
         ),
         backgroundColor: AppTheme.surfaceDark,
         centerTitle: true,
+        actions: const [AppBarLogo()],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

@@ -4,6 +4,7 @@ import 'home/home_screen.dart';
 import 'menu/menu_screen.dart';
 import 'fidelity/fidelity_screen.dart';
 import 'rewards/rewards_screen.dart';
+import 'settings/settings_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -15,11 +16,12 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    MenuScreen(),
-    FidelityScreen(),
-    RewardsScreen(),
+  List<Widget> get _screens => [
+    HomeScreen(onGoToRewards: () => _onItemTapped(3)),
+    const MenuScreen(),
+    const FidelityScreen(),
+    const RewardsScreen(),
+    const SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -72,6 +74,11 @@ class _MainNavigationState extends State<MainNavigation> {
               icon: Icon(Icons.emoji_events_outlined),
               activeIcon: Icon(Icons.emoji_events, color: AppTheme.accentGold),
               label: 'Premi',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings, color: AppTheme.accentGold),
+              label: 'Impostazioni',
             ),
           ],
         ),
