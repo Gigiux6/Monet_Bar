@@ -106,5 +106,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // 8. Notification Requests
+    match /notification_requests/{reqId} {
+      allow write: if isAdmin();
+    }
   }
 }
