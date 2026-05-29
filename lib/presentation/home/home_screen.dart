@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,41 +16,31 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _promoController = PageController();
   int _currentPromoPage = 0;
+  int _promoLength = 0;
   Timer? _promoTimer;
-
-  final List<Map<String, String>> _promos = [
-    {
-      'title': 'L\'Ora dell\'Aperitivo',
-      'subtitle': 'Tutti i giorni 18:00 - 20:00',
-      'desc': 'Ordina 2 cocktail signature e ricevi un tagliere Antigravity in omaggio!',
-      'badge': 'PROMO TOP',
-    },
-    {
-      'title': 'Brunch d\'Autore',
-      'subtitle': 'Domenica dalle 11:30',
-      'desc': 'Pancake freschi alla crema e spremute d\'arancia bio con sconto fidelity del 10%.',
-      'badge': 'DOMENICA',
-    },
-    {
-      'title': 'Caffè & Cornetto Art',
-      'subtitle': 'Colazione dalle 07:00 alle 10:00',
-      'desc': 'Espresso Monet + Cornetto Monna Lisa a soli 3.00€ per tutti i soci fidelity.',
-      'badge': 'COLAZIONE',
-    },
-  ];
+  late final Stream<dynamic> _userStream;
+  late final Stream<QuerySnapshot> _newsStream;
 
   @override
   void initState() {
     super.initState();
+    _userStream = AuthService().userStateChanges;
+    _newsStream = FirebaseFirestore.instance
+        .collection('news')
+        .where('is_active', isEqualTo: true)
+        .snapshots();
+
     _promoTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (!mounted) return;
+      if (!mounted || _promoLength <= 1) return;
       setState(() {
-        _currentPromoPage = (_currentPromoPage + 1) % _promos.length;
-        _promoController.animateToPage(
-          _currentPromoPage,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOutCubic,
-        );
+        _currentPromoPage++;
+        if (_promoController.hasClients) {
+          _promoController.animateToPage(
+            _currentPromoPage,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOutCubic,
+          );
+        }
       });
     });
   }
@@ -77,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder(
-        stream: AuthService().userStateChanges,
+        stream: _userStream,
         builder: (context, snapshot) {
           final user = snapshot.data ?? AuthService().currentUser;
           if (user == null) {
@@ -206,101 +198,150 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 12),
 
                     // Promos Carousel Card
-                    SizedBox(
-                      height: 160,
-                      child: PageView.builder(
-                        controller: _promoController,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentPromoPage = index;
-                          });
-                        },
-                        itemCount: _promos.length,
-                        itemBuilder: (context, index) {
-                          final promo = _promos[index];
-                          return Container(
-                            margin: const EdgeInsets.only(right: 6, left: 6, bottom: 4),
-                            padding: const EdgeInsets.all(20),
-                            decoration: AppTheme.glassCard(borderColor: AppTheme.accentGold.withOpacity(0.2)),
-                            child: Stack(
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      promo['title']!,
-                                      style: GoogleFonts.playfairDisplay(
-                                        color: AppTheme.textCream,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _newsStream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const Center(child: Text('Errore nel caricamento novità.'));
+                        }
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        final docs = snapshot.data?.docs.toList() ?? [];
+                        docs.sort((a, b) {
+                          final dataA = a.data() as Map<String, dynamic>;
+                          final dataB = b.data() as Map<String, dynamic>;
+                          final timeA = dataA['timestamp_creazione'] as Timestamp?;
+                          final timeB = dataB['timestamp_creazione'] as Timestamp?;
+                          if (timeA == null && timeB == null) return 0;
+                          if (timeA == null) return 1;
+                          if (timeB == null) return -1;
+                          return timeB.compareTo(timeA);
+                        });
+                        
+                        if (docs.isEmpty) {
+                          return const SizedBox(); // Nessuna news
+                        }
+
+                        // Aggiorniamo _promoLength in modo asincrono per non bloccare il build
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted && _promoLength != docs.length) {
+                            setState(() {
+                              _promoLength = docs.length;
+                            });
+                          }
+                        });
+
+                        return Column(
+                          children: [
+                            SizedBox(
+                              height: 160,
+                              child: PageView.builder(
+                                controller: _promoController,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentPromoPage = index;
+                                  });
+                                },
+                                itemBuilder: (context, index) {
+                                  final realIndex = index % docs.length;
+                                  final data = docs[realIndex].data() as Map<String, dynamic>;
+                                  final title = data['titolo'] ?? 'Novità';
+                                  final desc = data['contenuto'] ?? '';
+                                  final timestamp = data['timestamp_creazione'] as Timestamp?;
+                                  final dateStr = timestamp != null
+                                      ? DateFormat('dd MMM yyyy').format(timestamp.toDate())
+                                      : 'Oggi';
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(right: 6, left: 6, bottom: 4),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: AppTheme.glassCard(borderColor: AppTheme.accentGold.withOpacity(0.2)),
+                                    child: Stack(
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              title,
+                                              style: GoogleFonts.playfairDisplay(
+                                                color: AppTheme.textCream,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              dateStr,
+                                              style: GoogleFonts.outfit(
+                                                color: AppTheme.accentAmber,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              desc,
+                                              style: GoogleFonts.outfit(
+                                                color: AppTheme.textSecondary,
+                                                fontSize: 13,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.accentGold.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: AppTheme.accentGold, width: 1),
+                                            ),
+                                            child: Text(
+                                              'NEWS',
+                                              style: GoogleFonts.outfit(
+                                                color: AppTheme.accentGold,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      promo['subtitle']!,
-                                      style: GoogleFonts.outfit(
-                                        color: AppTheme.accentAmber,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      promo['desc']!,
-                                      style: GoogleFonts.outfit(
-                                        color: AppTheme.textSecondary,
-                                        fontSize: 13,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                                Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.accentGold.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: AppTheme.accentGold, width: 1),
-                                    ),
-                                    child: Text(
-                                      promo['badge']!,
-                                      style: GoogleFonts.outfit(
-                                        color: AppTheme.accentGold,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            // Dot Indicator
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                docs.length,
+                                (index) => Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: (_currentPromoPage % docs.length) == index
+                                        ? AppTheme.accentGold
+                                        : AppTheme.textMuted.withOpacity(0.4),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // Dot Indicator
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _promos.length,
-                        (index) => Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPromoPage == index
-                                ? AppTheme.accentGold
-                                : AppTheme.textMuted.withOpacity(0.4),
-                          ),
-                        ),
-                      ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 

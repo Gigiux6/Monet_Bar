@@ -100,5 +100,11 @@ service cloud.firestore {
       allow update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
       allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
     }
+
+    // 7. News Collection
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

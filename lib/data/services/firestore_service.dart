@@ -14,23 +14,29 @@ class FirestoreService {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
   FirebaseAuth get _auth => FirebaseAuth.instance;
 
-  /// Fetch all menu items from the 'menu_items' collection.
   Stream<List<MenuItem>> get menuItemsStream {
     return _db.collection('menu_items')
         .where('isAvailable', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => MenuItem.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => MenuItem.fromMap(doc.data(), doc.id))
+              .toList();
+          list.sort((a, b) => a.name.compareTo(b.name));
+          return list;
+        });
   }
 
-  /// Fetch the rewards catalog from the 'rewards' collection.
   Stream<List<Reward>> get rewardsStream {
     return _db.collection('rewards')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Reward.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => Reward.fromMap(doc.data(), doc.id))
+              .toList();
+          list.sort((a, b) => a.pointsCost.compareTo(b.pointsCost));
+          return list;
+        });
   }
 
   /// Stream of active and used coupons for the current logged-in user.

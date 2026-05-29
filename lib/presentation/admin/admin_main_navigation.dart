@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_menu_settings_screen.dart';
+import 'admin_news_screen.dart';
 
 class AdminMainNavigation extends StatefulWidget {
   const AdminMainNavigation({super.key});
@@ -13,15 +14,10 @@ class AdminMainNavigation extends StatefulWidget {
 class _AdminMainNavigationState extends State<AdminMainNavigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
+    final List<Widget> _pages = [
     const AdminDashboardScreen(),
     const AdminMenuSettingsScreen(),
-    const Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
-      body: Center(
-        child: Text('Modulo Impostazioni in arrivo', style: TextStyle(color: AppTheme.textCream)),
-      ),
-    ),
+    const AdminNewsScreen(),
   ];
 
   @override
@@ -49,8 +45,8 @@ class _AdminMainNavigationState extends State<AdminMainNavigation> {
             label: 'Menu',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Impostazioni',
+            icon: Icon(Icons.campaign),
+            label: 'Novità',
           ),
         ],
       ),
