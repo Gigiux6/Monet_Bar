@@ -219,19 +219,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           'PANNELLO DI CONTROLLO',
           style: GoogleFonts.playfairDisplay(
             color: AppTheme.textCream,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.redAccent),
-            onPressed: _handleLogout,
-            tooltip: 'Logout',
-          ),
-          const AppBarLogo(),
+        actions: const [
+          AppBarLogo(),
         ],
       ),
       body: SafeArea(
@@ -265,6 +260,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _handleLogout,
+                      icon: const Icon(Icons.logout, size: 20),
+                      label: Text('LOGOUT', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent.withOpacity(0.1),
+                        foregroundColor: Colors.redAccent,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Colors.redAccent, width: 1),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
                     ),
                   ],
                 ),

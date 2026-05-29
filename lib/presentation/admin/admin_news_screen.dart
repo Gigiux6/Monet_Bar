@@ -173,21 +173,11 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                title, 
-                                style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text(
-                              dateStr,
-                              style: GoogleFonts.outfit(color: AppTheme.accentAmber, fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          ],
+                        Text(
+                          title, 
+                          style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -242,8 +232,8 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
       backgroundColor: AppTheme.backgroundDark,
       appBar: AppBar(
         title: Text(
-          'Gestione Promozioni',
-          style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold),
+          'GESTIONE NOVITÀ',
+          style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 18),
         ),
         backgroundColor: AppTheme.surfaceDark,
         centerTitle: true,

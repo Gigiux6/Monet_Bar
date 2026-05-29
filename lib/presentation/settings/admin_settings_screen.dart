@@ -12,8 +12,8 @@ class AdminSettingsScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundDark,
       appBar: AppBar(
         title: Text(
-          'Impostazioni',
-          style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold),
+          'IMPOSTAZIONI',
+          style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 18),
         ),
         backgroundColor: AppTheme.surfaceDark,
         centerTitle: true,

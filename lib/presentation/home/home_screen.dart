@@ -292,15 +292,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              dateStr,
-                                              style: GoogleFonts.outfit(
-                                                color: AppTheme.accentAmber,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
                                             const SizedBox(height: 10),
                                             Text(
                                               desc,
