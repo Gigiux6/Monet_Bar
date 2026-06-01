@@ -191,7 +191,6 @@ class _RewardsScreenState extends State<RewardsScreen> {
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
-                          physics: const BouncingScrollPhysics(),
                           itemCount: rewards.length,
                           itemBuilder: (context, index) {
                             final reward = rewards[index];

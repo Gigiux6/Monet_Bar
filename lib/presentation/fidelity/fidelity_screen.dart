@@ -59,7 +59,6 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
           }
 
           return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
             child: Padding(
               padding: const EdgeInsets.all(18.0),
               child: Column(

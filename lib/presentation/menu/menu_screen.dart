@@ -398,8 +398,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
-                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
                   itemCount: filteredList.length,
                   itemBuilder: (context, index) {
                     final item = filteredList[index];

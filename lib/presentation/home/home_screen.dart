@@ -109,7 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return SafeArea(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 16),
                 child: Column(
