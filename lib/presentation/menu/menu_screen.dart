@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/menu_model.dart';
 import '../../data/services/firestore_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../widgets/app_bar_logo.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -21,6 +22,19 @@ class _MenuScreenState extends State<MenuScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildFallbackIcon(MenuItem item) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: item.isSignature ? AppTheme.accentGold.withOpacity(0.15) : AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: item.isSignature ? AppTheme.accentGold : Colors.transparent, width: 1),
+      ),
+      child: Icon(_getIconForName(item.iconName), color: item.isSignature ? AppTheme.accentAmber : AppTheme.accentGold, size: 26),
+    );
   }
 
   IconData _getIconForName(String? iconName) {
@@ -82,6 +96,23 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+
+              if (item.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    child: CachedNetworkImage(
+                      imageUrl: item.imageUrl!,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => Container(height: 200, color: AppTheme.cardDark, child: const Center(child: CircularProgressIndicator())),
+                      errorWidget: (context, url, error) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // Title and Price Row
               Row(
@@ -386,26 +417,21 @@ class _MenuScreenState extends State<MenuScreen> {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              // Category Icon
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: item.isSignature
-                                      ? AppTheme.accentGold.withOpacity(0.15)
-                                      : AppTheme.cardDark,
+                              // Category Icon or Image
+                              if (item.imageUrl != null)
+                                ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: item.isSignature ? AppTheme.accentGold : Colors.transparent,
-                                    width: 1,
+                                  child: CachedNetworkImage(
+                                    imageUrl: item.imageUrl!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(width: 50, height: 50, color: AppTheme.cardDark, child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))),
+                                    errorWidget: (context, url, error) => _buildFallbackIcon(item),
                                   ),
-                                ),
-                                child: Icon(
-                                  _getIconForName(item.iconName),
-                                  color: item.isSignature ? AppTheme.accentAmber : AppTheme.accentGold,
-                                  size: 26,
-                                ),
-                              ),
+                                )
+                              else
+                                _buildFallbackIcon(item),
                               const SizedBox(width: 16),
 
                               // Title and Description

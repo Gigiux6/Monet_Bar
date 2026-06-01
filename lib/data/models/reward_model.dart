@@ -5,6 +5,7 @@ class Reward {
   final int pointsCost;
   final String iconName;
   final String terms;
+  final String? imageUrl;
 
   Reward({
     required this.id,
@@ -13,6 +14,7 @@ class Reward {
     required this.pointsCost,
     required this.iconName,
     required this.terms,
+    this.imageUrl,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +25,7 @@ class Reward {
       'pointsCost': pointsCost,
       'iconName': iconName,
       'terms': terms,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -32,8 +35,9 @@ class Reward {
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       pointsCost: map['pointsCost'] ?? map['pointsRequired'] ?? 0,
-      iconName: map['iconName'] ?? map['imageUrl'] ?? '',
+      iconName: map['iconName'] ?? '',
       terms: map['terms'] ?? '',
+      imageUrl: map['imageUrl'],
     );
   }
 }

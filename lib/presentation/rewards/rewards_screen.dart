@@ -6,6 +6,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/firestore_service.dart';
 import '../../data/models/user_model.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../widgets/app_bar_logo.dart';
 
 
@@ -210,6 +211,24 @@ class _RewardsScreenState extends State<RewardsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Image (if present)
+                                  if (reward.imageUrl != null) ...[
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(maxHeight: 250),
+                                        child: CachedNetworkImage(
+                                          imageUrl: reward.imageUrl!,
+                                          width: double.infinity,
+                                          fit: BoxFit.contain,
+                                          placeholder: (context, url) => Container(height: 180, color: AppTheme.cardDark, child: const Center(child: CircularProgressIndicator())),
+                                          errorWidget: (context, url, error) => const SizedBox.shrink(),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+
                                   // Icon & Points header row
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,

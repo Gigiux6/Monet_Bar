@@ -27,6 +27,7 @@ class MenuItem {
   final List<String> ingredients;
   final bool isSignature;
   final String? iconName; // Helper to display representative icons
+  final String? imageUrl;
 
   MenuItem({
     required this.id,
@@ -37,6 +38,7 @@ class MenuItem {
     required this.ingredients,
     this.isSignature = false,
     this.iconName,
+    this.imageUrl,
   });
 
   Map<String, dynamic> toMap() {
@@ -49,6 +51,7 @@ class MenuItem {
       'ingredients': ingredients,
       'isSignature': isSignature,
       'iconName': iconName,
+      'imageUrl': imageUrl,
       'isAvailable': true,
     };
   }
@@ -65,7 +68,8 @@ class MenuItem {
       ),
       ingredients: List<String>.from(map['ingredients'] ?? []),
       isSignature: map['isSignature'] ?? false,
-      iconName: map['iconName'] ?? map['imageUrl'],
+      iconName: map['iconName'],
+      imageUrl: map['imageUrl'],
     );
   }
 }

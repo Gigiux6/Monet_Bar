@@ -4,6 +4,9 @@ import '../../core/theme/app_theme.dart';
 import '../../data/services/firestore_service.dart';
 import '../../data/models/menu_model.dart';
 import '../../data/models/reward_model.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../widgets/app_bar_logo.dart';
 
 class AdminMenuSettingsScreen extends StatelessWidget {
@@ -225,10 +228,30 @@ class _ProductFormState extends State<_ProductForm> {
   late final TextEditingController _descController;
   late final TextEditingController _priceController;
   late final TextEditingController _ingredientsController;
-  late final TextEditingController _iconController;
   late MenuCategory _category;
   late bool _isSignature;
   bool _isSaving = false;
+
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _existingImageUrl;
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 75,
+    );
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedImage = image;
+        _selectedImageBytes = bytes;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -238,9 +261,9 @@ class _ProductFormState extends State<_ProductForm> {
     _descController = TextEditingController(text: item?.description ?? '');
     _priceController = TextEditingController(text: item != null ? item.price.toStringAsFixed(2) : '');
     _ingredientsController = TextEditingController(text: item?.ingredients.join(', ') ?? '');
-    _iconController = TextEditingController(text: item?.iconName ?? '');
     _category = item?.category ?? MenuCategory.caffetteria;
     _isSignature = item?.isSignature ?? false;
+    _existingImageUrl = item?.imageUrl;
   }
 
   @override
@@ -249,7 +272,6 @@ class _ProductFormState extends State<_ProductForm> {
     _descController.dispose();
     _priceController.dispose();
     _ingredientsController.dispose();
-    _iconController.dispose();
     super.dispose();
   }
 
@@ -257,6 +279,13 @@ class _ProductFormState extends State<_ProductForm> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
+      String? finalImageUrl = _existingImageUrl;
+      if (_selectedImageBytes != null) {
+        final ref = FirebaseStorage.instance.ref().child('menu_images/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await ref.putData(_selectedImageBytes!, SettableMetadata(contentType: 'image/jpeg'));
+        finalImageUrl = await ref.getDownloadURL();
+      }
+
       final item = MenuItem(
         id: widget.itemToEdit?.id ?? '', 
         name: _nameController.text.trim(),
@@ -265,7 +294,8 @@ class _ProductFormState extends State<_ProductForm> {
         category: _category,
         ingredients: _ingredientsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
         isSignature: _isSignature,
-        iconName: _iconController.text.trim().isEmpty ? null : _iconController.text.trim(),
+        iconName: null,
+        imageUrl: finalImageUrl,
       );
       if (widget.itemToEdit == null) {
         await FirestoreService().addMenuItem(item);
@@ -291,8 +321,43 @@ class _ProductFormState extends State<_ProductForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.itemToEdit == null ? 'NUOVO PRODOTTO MENU' : 'MODIFICA PRODOTTO', style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2), textAlign: TextAlign.center),
-          const SizedBox(height: 20),
+          Text(widget.itemToEdit == null ? 'NUOVO PRODOTTO' : 'MODIFICA PRODOTTO', style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2), textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              height: 150,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceDark,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.accentGold.withOpacity(0.5)),
+                image: _selectedImageBytes != null
+                    ? DecorationImage(image: MemoryImage(_selectedImageBytes!), fit: BoxFit.contain)
+                    : ((_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
+                        ? DecorationImage(image: NetworkImage(_existingImageUrl!), fit: BoxFit.contain)
+                        : null),
+              ),
+              child: _selectedImageBytes == null && (_existingImageUrl == null || _existingImageUrl!.isEmpty)
+                  ? const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.camera_alt, color: AppTheme.accentGold, size: 40), SizedBox(height: 8), Text('Aggiungi Foto', style: TextStyle(color: AppTheme.textSecondary))]))
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt, color: Colors.white, size: 32),
+                            SizedBox(height: 4),
+                            Text('Modifica Foto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _nameController,
             style: GoogleFonts.outfit(color: AppTheme.textCream),
@@ -327,12 +392,6 @@ class _ProductFormState extends State<_ProductForm> {
             controller: _ingredientsController,
             style: GoogleFonts.outfit(color: AppTheme.textCream),
             decoration: const InputDecoration(labelText: 'Ingredienti (separati da virgola)', prefixIcon: Icon(Icons.kitchen, color: AppTheme.accentGold)),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _iconController,
-            style: GoogleFonts.outfit(color: AppTheme.textCream),
-            decoration: const InputDecoration(labelText: 'Nome Icona (es. local_cafe)', prefixIcon: Icon(Icons.image, color: AppTheme.accentGold)),
           ),
           const SizedBox(height: 16),
           SwitchListTile(
@@ -488,9 +547,28 @@ class _RewardFormState extends State<_RewardForm> {
   late final TextEditingController _titleController;
   late final TextEditingController _descController;
   late final TextEditingController _pointsController;
-  late final TextEditingController _termsController;
-  late final TextEditingController _iconController;
   bool _isSaving = false;
+
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _existingImageUrl;
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 75,
+    );
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedImage = image;
+        _selectedImageBytes = bytes;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -499,8 +577,7 @@ class _RewardFormState extends State<_RewardForm> {
     _titleController = TextEditingController(text: item?.title ?? '');
     _descController = TextEditingController(text: item?.description ?? '');
     _pointsController = TextEditingController(text: item != null ? item.pointsCost.toString() : '');
-    _termsController = TextEditingController(text: item?.terms ?? '');
-    _iconController = TextEditingController(text: item?.iconName ?? '');
+    _existingImageUrl = item?.imageUrl;
   }
 
   @override
@@ -508,8 +585,6 @@ class _RewardFormState extends State<_RewardForm> {
     _titleController.dispose();
     _descController.dispose();
     _pointsController.dispose();
-    _termsController.dispose();
-    _iconController.dispose();
     super.dispose();
   }
 
@@ -517,13 +592,21 @@ class _RewardFormState extends State<_RewardForm> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
+      String? finalImageUrl = _existingImageUrl;
+      if (_selectedImageBytes != null) {
+        final ref = FirebaseStorage.instance.ref().child('rewards_images/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await ref.putData(_selectedImageBytes!, SettableMetadata(contentType: 'image/jpeg'));
+        finalImageUrl = await ref.getDownloadURL();
+      }
+
       final reward = Reward(
         id: widget.itemToEdit?.id ?? '',
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         pointsCost: int.parse(_pointsController.text.trim()),
-        terms: _termsController.text.trim(),
-        iconName: _iconController.text.trim().isEmpty ? 'card_giftcard' : _iconController.text.trim(),
+        terms: '',
+        iconName: '',
+        imageUrl: finalImageUrl,
       );
       if (widget.itemToEdit == null) {
         await FirestoreService().addReward(reward);
@@ -550,7 +633,42 @@ class _RewardFormState extends State<_RewardForm> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(widget.itemToEdit == null ? 'NUOVO PREMIO' : 'MODIFICA PREMIO', style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2), textAlign: TextAlign.center),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              height: 150,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceDark,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.accentGold.withOpacity(0.5)),
+                image: _selectedImageBytes != null
+                    ? DecorationImage(image: MemoryImage(_selectedImageBytes!), fit: BoxFit.contain)
+                    : ((_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
+                        ? DecorationImage(image: NetworkImage(_existingImageUrl!), fit: BoxFit.contain)
+                        : null),
+              ),
+              child: _selectedImageBytes == null && (_existingImageUrl == null || _existingImageUrl!.isEmpty)
+                  ? const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.camera_alt, color: AppTheme.accentGold, size: 40), SizedBox(height: 8), Text('Aggiungi Foto', style: TextStyle(color: AppTheme.textSecondary))]))
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt, color: Colors.white, size: 32),
+                            SizedBox(height: 4),
+                            Text('Modifica Foto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _titleController,
             style: GoogleFonts.outfit(color: AppTheme.textCream),
@@ -573,19 +691,6 @@ class _RewardFormState extends State<_RewardForm> {
             validator: (v) => int.tryParse(v!.trim()) == null ? 'Valore intero non valido' : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _termsController,
-            style: GoogleFonts.outfit(color: AppTheme.textCream),
-            decoration: const InputDecoration(labelText: 'Termini e Condizioni', prefixIcon: Icon(Icons.gavel, color: AppTheme.accentGold)),
-            validator: (v) => v!.trim().isEmpty ? 'Richiesto' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _iconController,
-            style: GoogleFonts.outfit(color: AppTheme.textCream),
-            decoration: const InputDecoration(labelText: 'Nome Icona (es. cake)', prefixIcon: Icon(Icons.image, color: AppTheme.accentGold)),
-          ),
-          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _isSaving ? null : _submit,
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentGold, foregroundColor: AppTheme.backgroundDark, padding: const EdgeInsets.symmetric(vertical: 16)),
