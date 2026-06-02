@@ -298,6 +298,39 @@ class AuthService {
       throw 'Errore durante il collegamento account: $e';
     }
   }
+
+  /// Delete the current user's account and data.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'Utente non autenticato.';
+
+    try {
+      // 1. Get username to delete it from usernames collection
+      final userDoc = await _db.collection('users').doc(user.uid).get();
+      final username = userDoc.data()?['name'] as String?;
+
+      // 2. Delete Firestore data via batch
+      final batch = _db.batch();
+      if (username != null && username.isNotEmpty) {
+        batch.delete(_db.collection('usernames').doc(username));
+      }
+      batch.delete(_db.collection('users').doc(user.uid));
+      // Note: non eliminiamo le sottocollezioni (transactions, coupons) per semplicità, 
+      // rimarranno orfane ma inaccessibili.
+      await batch.commit();
+
+      // 3. Delete auth account
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw 'Per motivi di sicurezza, fai il logout e accedi di nuovo prima di eliminare l\'account.';
+      }
+      throw _mapFirebaseAuthError(e);
+    } catch (e) {
+      throw 'Errore durante l\'eliminazione dell\'account: $e';
+    }
+  }
+
   /// Updates the user's username in both /usernames and /users collections.
   Future<void> updateUsername(String newUsername, String oldUsername) async {
     final user = _auth.currentUser;

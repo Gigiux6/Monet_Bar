@@ -30,7 +30,7 @@ service cloud.firestore {
       allow update: if isAdmin() || 
         (isOwner(userId) && request.resource.data.points == resource.data.points);
         
-      allow delete: if isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
 
       // Nested subcollections rules (if user-nested coupons/transactions are used)
       match /coupons/{couponId} {

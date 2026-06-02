@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _launchInstagram() async {
-    final Uri url = Uri.parse('https://www.instagram.com/pasticceriamonet?igsh=MXhlcXJ5c3kwbGhu');
+    final Uri url = Uri.parse('https://www.instagram.com/monetpasticceriabar?igsh=NnV5Nmo2YWZ2OXR0');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
