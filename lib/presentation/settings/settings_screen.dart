@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
+import '../login_screen.dart';
 import '../widgets/app_bar_logo.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -60,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
                 applicationIcon: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Image.asset(
-                    'assets/images/logo.png',
+                    'assets/logo.png',
                     width: 80,
                     height: 80,
                   ),
@@ -177,12 +178,15 @@ class SettingsScreen extends StatelessWidget {
       await AuthService().deleteAccount();
       
       if (context.mounted) {
-        Navigator.pop(context); // chiude loading dialog
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context, rootNavigator: true).pop(); // chiude loading dialog
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        Navigator.pop(context); // chiude loading dialog
+        Navigator.of(context, rootNavigator: true).pop(); // chiude loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString(), style: GoogleFonts.outfit(color: Colors.white)),

@@ -118,6 +118,123 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showPasswordRecoveryDialog() {
+    final recoveryEmailController = TextEditingController();
+    bool isRecovering = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: AppTheme.surfaceDark,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: AppTheme.accentGold, width: 1),
+              ),
+              title: Text(
+                'Recupero Password',
+                style: GoogleFonts.playfairDisplay(color: AppTheme.accentGold, fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Inserisci il tuo indirizzo email. Ti invieremo un link per reimpostare la tua password.',
+                    style: GoogleFonts.outfit(color: AppTheme.textCream, fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: recoveryEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    style: GoogleFonts.outfit(color: AppTheme.textCream),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.accentGold),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: AppTheme.accentGold.withAlpha(128)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppTheme.accentGold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isRecovering ? null : () => Navigator.pop(context),
+                  child: Text('ANNULLA', style: GoogleFonts.outfit(color: AppTheme.textMuted)),
+                ),
+                ElevatedButton(
+                  onPressed: isRecovering
+                      ? null
+                      : () async {
+                          final email = recoveryEmailController.text.trim();
+                          if (email.isEmpty || !email.contains('@')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Inserisci un indirizzo email valido.'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+
+                          setStateDialog(() => isRecovering = true);
+
+                          try {
+                            await AuthService().resetPassword(email);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Email di recupero inviata! Controlla la tua casella di posta.',
+                                    style: GoogleFonts.outfit(color: AppTheme.backgroundDark, fontWeight: FontWeight.bold),
+                                  ),
+                                  backgroundColor: AppTheme.accentGold,
+                                  duration: const Duration(seconds: 5),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.toString(), style: GoogleFonts.outfit(color: Colors.white)),
+                                  backgroundColor: Colors.redAccent,
+                                  duration: const Duration(seconds: 4),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setStateDialog(() => isRecovering = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentGold, foregroundColor: AppTheme.backgroundDark),
+                  child: isRecovering
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.backgroundDark),
+                        )
+                      : Text('INVIA', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showAlternativeLoginOptions() {
     showModalBottomSheet(
       context: context,
@@ -410,6 +527,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             foregroundColor: AppTheme.accentGold,
                           ),
                           child: const Text('NON HAI UN ACCOUNT? REGISTRATI'),
+                        ),
+                        const SizedBox(height: 12),
+                        // Password recovery button
+                        TextButton(
+                          onPressed: _isLoading ? null : _showPasswordRecoveryDialog,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.textMuted,
+                          ),
+                          child: Text(
+                            'Hai dimenticato la password? Recuperala qui',
+                            style: GoogleFonts.outfit(decoration: TextDecoration.underline),
+                          ),
                         ),
                       ],
                     ),

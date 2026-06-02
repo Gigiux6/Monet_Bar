@@ -111,6 +111,17 @@ class AuthService {
     }
   }
 
+  /// Invia l'email per il recupero della password
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthError(e);
+    } catch (e) {
+      throw 'Errore durante il recupero password: $e';
+    }
+  }
+
   /// Register using Username, Email and Password with points initialization and error mapping.
   Future<UserModel?> register(String username, String email, String password) async {
     try {

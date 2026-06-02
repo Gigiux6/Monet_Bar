@@ -373,7 +373,6 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                       );
                     },
                   ),
-                  ),
                   const SizedBox(height: 30),
                 ],
               ),
