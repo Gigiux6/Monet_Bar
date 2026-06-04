@@ -368,6 +368,9 @@ class _ProductFormState extends State<_ProductForm> {
           TextFormField(
             controller: _descController,
             style: GoogleFonts.outfit(color: AppTheme.textCream),
+            maxLines: null,
+            minLines: 3,
+            keyboardType: TextInputType.multiline,
             decoration: const InputDecoration(labelText: 'Descrizione', prefixIcon: Icon(Icons.description, color: AppTheme.accentGold)),
             validator: (v) => v!.trim().isEmpty ? 'Richiesta' : null,
           ),
@@ -679,6 +682,9 @@ class _RewardFormState extends State<_RewardForm> {
           TextFormField(
             controller: _descController,
             style: GoogleFonts.outfit(color: AppTheme.textCream),
+            maxLines: null,
+            minLines: 3,
+            keyboardType: TextInputType.multiline,
             decoration: const InputDecoration(labelText: 'Descrizione', prefixIcon: Icon(Icons.description, color: AppTheme.accentGold)),
             validator: (v) => v!.trim().isEmpty ? 'Richiesta' : null,
           ),

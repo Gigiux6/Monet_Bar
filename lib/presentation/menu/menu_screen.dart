@@ -15,7 +15,7 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   final TextEditingController _searchController = TextEditingController();
-  MenuCategory _selectedCategory = MenuCategory.caffetteria;
+  MenuCategory? _selectedCategory;
   String _searchQuery = '';
 
   @override
@@ -315,15 +315,17 @@ class _MenuScreenState extends State<MenuScreen> {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: MenuCategory.values.length,
+              itemCount: MenuCategory.values.length + 1,
               itemBuilder: (context, index) {
-                final cat = MenuCategory.values[index];
+                final isAll = index == 0;
+                final cat = isAll ? null : MenuCategory.values[index - 1];
                 final isSelected = cat == _selectedCategory;
+                
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6.0),
                   child: ChoiceChip(
                     label: Text(
-                      cat.displayName,
+                      isAll ? 'Tutti' : cat!.displayName,
                       style: GoogleFonts.outfit(
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelected ? AppTheme.backgroundDark : AppTheme.textSecondary,
@@ -374,7 +376,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 
                 // Filter by category & search query
                 final List<MenuItem> filteredList = rawList.where((item) {
-                  final matchesCategory = item.category == _selectedCategory;
+                  final matchesCategory = _searchQuery.isNotEmpty || _selectedCategory == null || item.category == _selectedCategory;
                   final matchesSearch = _searchQuery.isEmpty ||
                       item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                       item.ingredients.any((ing) => ing.toLowerCase().contains(_searchQuery.toLowerCase()));

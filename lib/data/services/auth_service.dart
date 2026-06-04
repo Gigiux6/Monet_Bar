@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
+import 'rate_limiter_service.dart';
 
 /// Custom exception for account linking
 class NeedsPasswordForLinkingException implements Exception {
@@ -60,6 +61,7 @@ class AuthService {
 
   /// Sign in using Email and Password with friendly error mapping.
   Future<UserModel?> login(String email, String password) async {
+    await RateLimiterService().checkAuthLimit();
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -77,8 +79,12 @@ class AuthService {
       }
       return null;
     } on FirebaseAuthException catch (e) {
+      await RateLimiterService().recordAuthFailure();
       throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
     } catch (e) {
+      await RateLimiterService().recordAuthFailure();
       throw 'Errore generico: $e';
     }
   }
@@ -113,17 +119,23 @@ class AuthService {
 
   /// Invia l'email per il recupero della password
   Future<void> resetPassword(String email) async {
+    await RateLimiterService().checkAuthLimit();
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
+      await RateLimiterService().recordAuthFailure();
       throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
     } catch (e) {
+      await RateLimiterService().recordAuthFailure();
       throw 'Errore durante il recupero password: $e';
     }
   }
 
   /// Register using Username, Email and Password with points initialization and error mapping.
   Future<UserModel?> register(String username, String email, String password) async {
+    await RateLimiterService().checkAuthLimit();
     try {
       final isTaken = await isUsernameTaken(username);
       if (isTaken) {
@@ -135,6 +147,9 @@ class AuthService {
         password: password,
       );
       if (credential.user == null) return null;
+      
+      // Invia l'email di verifica
+      await credential.user!.sendEmailVerification();
       
       final newUser = UserModel(
         id: credential.user!.uid,
@@ -151,8 +166,14 @@ class AuthService {
       await _db.collection('users').doc(credential.user!.uid).set(newUser.toMap());
       return newUser;
     } on FirebaseAuthException catch (e) {
+      await RateLimiterService().recordAuthFailure();
       throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
     } catch (e) {
+      if (e is RateLimitExceededException) rethrow;
+      if (e is String && e.startsWith('Il nome utente')) throw e; // Don't record failure for username taken
+      await RateLimiterService().recordAuthFailure();
       if (e is String) throw e;
       throw 'Errore generico: $e';
     }
@@ -160,6 +181,7 @@ class AuthService {
 
   /// Sign in with Google
   Future<UserModel?> signInWithGoogle() async {
+    await RateLimiterService().checkAuthLimit();
     GoogleSignInAccount? googleUser;
     AuthCredential? credential;
     try {
@@ -271,13 +293,18 @@ class AuthService {
           );
         }
       }
+      await RateLimiterService().recordAuthFailure();
       throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
     } catch (e, stacktrace) {
       print('--- ERROR DURING GOOGLE SIGN IN (Generic) ---');
       print('Error Type: ${e.runtimeType}');
       print('Error Details: $e');
       print('Stacktrace: $stacktrace');
       print('-----------------------------------');
+      if (e is RateLimitExceededException) rethrow;
+      await RateLimiterService().recordAuthFailure();
       throw 'Errore durante l\'accesso con Google: $e';
     }
   }

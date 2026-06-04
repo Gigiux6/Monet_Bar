@@ -32,6 +32,12 @@ class SettingsScreen extends StatelessWidget {
           // SEZIONE ACCOUNT
           _buildSectionHeader('Account'),
           _buildSettingsTile(
+            icon: Icons.logout,
+            title: 'Logout',
+            subtitle: 'Esci dal tuo account',
+            onTap: () => _handleLogout(context),
+          ),
+          _buildSettingsTile(
             icon: Icons.delete_forever,
             title: 'Elimina Account',
             subtitle: 'Richiede la rimozione definitiva dei dati',
@@ -193,6 +199,45 @@ class SettingsScreen extends StatelessWidget {
             backgroundColor: Colors.redAccent,
             duration: const Duration(seconds: 5),
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceDark,
+          title: Text(
+            'LOGOUT',
+            style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Sei sicuro di voler uscire dal profilo?',
+            style: GoogleFonts.outfit(color: AppTheme.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('ANNULLA', style: GoogleFonts.outfit(color: AppTheme.textMuted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('LOGOUT', style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true && context.mounted) {
+      await AuthService().logout();
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
         );
       }
     }

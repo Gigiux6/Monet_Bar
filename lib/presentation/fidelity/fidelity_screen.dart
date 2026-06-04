@@ -141,54 +141,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                             ],
                           ),
                         ),
-                        // Logout Button
-                        IconButton(
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                backgroundColor: AppTheme.surfaceDark,
-                                title: Text(
-                                  'LOGOUT',
-                                  style: GoogleFonts.playfairDisplay(
-                                    color: AppTheme.textCream,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                content: Text(
-                                  'Sei sicuro di voler uscire dal profilo?',
-                                  style: GoogleFonts.outfit(color: AppTheme.textSecondary),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: Text(
-                                      'ANNULLA',
-                                      style: GoogleFonts.outfit(color: AppTheme.textMuted),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: Text(
-                                      'LOGOUT',
-                                      style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
 
-                            if (confirm == true && context.mounted) {
-                              await AuthService().logout();
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                (route) => false,
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.logout, color: Colors.redAccent),
-                          tooltip: 'Logout',
-                        ),
                       ],
                     ),
                   ),

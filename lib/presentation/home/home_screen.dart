@@ -448,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const Divider(color: AppTheme.accentGold, height: 16, thickness: 0.5),
                                 Text(
-                                  'Via dell\'Impressionismo, 42\nFirenze (FI)',
+                                  'Provinciale Nola Cicciano, 10\n80030 Camposano NA',
                                   style: GoogleFonts.outfit(
                                     color: AppTheme.textSecondary,
                                     fontSize: 12,
@@ -457,7 +457,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 InkWell(
-                                  onTap: () => _showMockAction('Apertura navigatore per Via dell\'Impressionismo...'),
+                                  onTap: () async {
+                                    final url = Uri.parse('geo:0,0?q=Provinciale Nola Cicciano, 10, 80030 Camposano NA');
+                                    final webUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=Provinciale+Nola+Cicciano,+10,+80030+Camposano+NA');
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url);
+                                    } else {
+                                      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+                                    }
+                                  },
                                   child: Row(
                                     children: [
                                       const Icon(Icons.directions, color: AppTheme.accentAmber, size: 14),

@@ -111,56 +111,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceDark,
-        title: Text(
-          'LOGOUT',
-          style: GoogleFonts.playfairDisplay(
-            color: AppTheme.textCream,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Sei sicuro di voler uscire dal profilo?',
-          style: GoogleFonts.outfit(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'ANNULLA',
-              style: GoogleFonts.outfit(color: AppTheme.textMuted),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'LOGOUT',
-              style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
 
-    if (confirm == true && mounted) {
-      await AuthService().logout();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 600),
-        ),
-        (route) => false,
-      );
-    }
-  }
 
   Future<void> _handleAwardPoints() async {
     if (!_formKey.currentState!.validate()) return;
@@ -260,22 +211,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _handleLogout,
-                      icon: const Icon(Icons.logout, size: 20),
-                      label: Text('LOGOUT', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withOpacity(0.1),
-                        foregroundColor: Colors.redAccent,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.redAccent, width: 1),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
                     ),
                   ],
                 ),

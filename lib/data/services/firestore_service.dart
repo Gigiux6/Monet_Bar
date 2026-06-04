@@ -4,6 +4,7 @@ import '../models/menu_model.dart';
 import '../models/reward_model.dart';
 import '../models/coupon_model.dart';
 import '../models/transaction_model.dart';
+import 'rate_limiter_service.dart';
 
 /// A service to handle all Cloud Firestore operations.
 class FirestoreService {
@@ -68,6 +69,7 @@ class FirestoreService {
 
   /// Add a new item to the menu.
   Future<void> addMenuItem(MenuItem item) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       final docRef = _db.collection('menu_items').doc();
       final map = item.toMap();
@@ -81,6 +83,7 @@ class FirestoreService {
 
   /// Update an existing menu item
   Future<void> updateMenuItem(MenuItem item) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       await _db.collection('menu_items').doc(item.id).update(item.toMap());
     } catch (e) {
@@ -91,6 +94,7 @@ class FirestoreService {
 
   /// Delete a menu item
   Future<void> deleteMenuItem(String id) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       await _db.collection('menu_items').doc(id).delete();
     } catch (e) {
@@ -101,6 +105,7 @@ class FirestoreService {
 
   /// Add a new reward to the catalog.
   Future<void> addReward(Reward reward) async {
+    await RateLimiterService().checkGeneralLimit();
     final docRef = _db.collection('rewards').doc();
     final map = reward.toMap();
     map['id'] = docRef.id;
@@ -109,6 +114,7 @@ class FirestoreService {
 
   /// Update an existing reward
   Future<void> updateReward(Reward reward) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       await _db.collection('rewards').doc(reward.id).update(reward.toMap());
     } catch (e) {
@@ -119,6 +125,7 @@ class FirestoreService {
 
   /// Delete a reward
   Future<void> deleteReward(String id) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       await _db.collection('rewards').doc(id).delete();
     } catch (e) {
@@ -130,6 +137,7 @@ class FirestoreService {
   /// Add points to a user profile and record a transaction in the new subcollection.
   /// (Smart Points Engine based on Euro spent).
   Future<bool> addPointsByUsername(String username, double amountSpent, String description) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       // Fase A (Lookup): Interroga la collezione /usernames/{username} per recuperare l'UID reale
       final usernameDoc = await _db.collection('usernames').doc(username).get();
@@ -182,6 +190,7 @@ class FirestoreService {
 
   /// Redeem a reward. Deducts points and generates a coupon atomically.
   Future<Map<String, dynamic>> redeemReward(Reward reward) async {
+    await RateLimiterService().checkGeneralLimit();
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
       return {'success': false, 'message': 'Utente non autenticato'};
@@ -244,6 +253,7 @@ class FirestoreService {
 
   /// Admin redeems a reward on behalf of a client using a QR code
   Future<Map<String, dynamic>> adminRedeemReward(String clientId, String rewardId) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       final rewardDoc = await _db.collection('rewards').doc(rewardId).get();
       if (!rewardDoc.exists) return {'success': false, 'message': 'Premio non trovato'};
@@ -309,6 +319,7 @@ class FirestoreService {
   /// Validate a coupon. Updates coupon status to 'used'.
   /// Used by the barista when validating a coupon presented by the customer.
   Future<bool> validateCoupon(String couponId) async {
+    await RateLimiterService().checkGeneralLimit();
     try {
       // Find the coupon document by code field or document ID
       final querySnapshot = await _db.collection('coupons')

@@ -17,8 +17,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'claude.monet@bar.it');
-  final _passwordController = TextEditingController(text: 'monet123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -546,15 +546,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Mock login tips
-                Text(
-                  'Usa le credenziali precompilate per provare l\'applicazione.',
-                  style: GoogleFonts.outfit(
-                    color: AppTheme.textMuted,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+
               ],
             ),
           ),
