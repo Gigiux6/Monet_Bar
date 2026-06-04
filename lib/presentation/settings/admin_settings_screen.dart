@@ -36,12 +36,47 @@ class AdminSettingsScreen extends StatelessWidget {
             title: 'Logout',
             subtitle: 'Esci dall\'account admin',
             onTap: () async {
-              await AuthService().logout();
-              if (context.mounted) {
-                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AppTheme.surfaceDark,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: AppTheme.accentGold, width: 1),
+                  ),
+                  title: Text(
+                    'Logout',
+                    style: GoogleFonts.playfairDisplay(color: AppTheme.accentGold, fontWeight: FontWeight.bold),
+                  ),
+                  content: Text(
+                    'Sei sicuro di voler uscire dall\'account?',
+                    style: GoogleFonts.outfit(color: AppTheme.textCream),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('ANNULLA', style: GoogleFonts.outfit(color: AppTheme.textMuted)),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGold,
+                        foregroundColor: AppTheme.backgroundDark,
+                      ),
+                      child: Text('ESCI', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                await AuthService().logout();
+                if (context.mounted) {
+                  Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
               }
             },
           ),
