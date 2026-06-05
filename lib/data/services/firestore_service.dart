@@ -67,6 +67,12 @@ class FirestoreService {
             .toList());
   }
 
+  /// Update user document
+  Future<void> updateUser(String uid, Map<String, dynamic> data) async {
+    await RateLimiterService().checkGeneralLimit();
+    await _db.collection('users').doc(uid).update(data);
+  }
+
   /// Add a new item to the menu.
   Future<void> addMenuItem(MenuItem item) async {
     await RateLimiterService().checkGeneralLimit();
@@ -255,12 +261,24 @@ class FirestoreService {
   Future<Map<String, dynamic>> adminRedeemReward(String clientId, String rewardId) async {
     await RateLimiterService().checkGeneralLimit();
     try {
-      final rewardDoc = await _db.collection('rewards').doc(rewardId).get();
-      if (!rewardDoc.exists) return {'success': false, 'message': 'Premio non trovato'};
-      
-      final rewardData = rewardDoc.data()!;
-      final pointsCost = ((rewardData['pointsCost'] ?? rewardData['pointsRequired'] ?? 0) as num).toInt();
-      final rewardTitle = rewardData['title'] as String;
+      int pointsCost = 0;
+      String rewardTitle = '';
+
+      if (rewardId.startsWith('special_')) {
+        pointsCost = 0;
+        rewardTitle = rewardId == 'special_birthday'
+            ? 'Regalo di Compleanno'
+            : rewardId == 'special_nameDay'
+                ? 'Regalo di Onomastico'
+                : 'Data Speciale';
+      } else {
+        final rewardDoc = await _db.collection('rewards').doc(rewardId).get();
+        if (!rewardDoc.exists) return {'success': false, 'message': 'Premio non trovato'};
+        
+        final rewardData = rewardDoc.data()!;
+        pointsCost = ((rewardData['pointsCost'] ?? rewardData['pointsRequired'] ?? 0) as num).toInt();
+        rewardTitle = rewardData['title'] as String;
+      }
 
       final userRef = _db.collection('users').doc(clientId);
       final couponRef = _db.collection('coupons').doc();

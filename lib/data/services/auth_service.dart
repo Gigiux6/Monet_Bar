@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'rate_limiter_service.dart';
+import 'notification_service.dart';
 
 /// Custom exception for account linking
 class NeedsPasswordForLinkingException implements Exception {
@@ -71,6 +72,10 @@ class AuthService {
       
       // Retrieve the user model from Firestore
       final userDoc = await _db.collection('users').doc(credential.user!.uid).get();
+      
+      // Iscrizione al topic utente per Notifiche Push Personali
+      NotificationService().subscribeToUserTopic(credential.user!.uid);
+
       if (userDoc.exists) {
         return UserModel.fromMap({
           'id': credential.user!.uid,
@@ -91,6 +96,10 @@ class AuthService {
 
   /// Sign out.
   Future<void> logout() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await NotificationService().unsubscribeFromUserTopic(user.uid);
+    }
     await _auth.signOut();
   }
 
@@ -164,6 +173,10 @@ class AuthService {
       });
 
       await _db.collection('users').doc(credential.user!.uid).set(newUser.toMap());
+      
+      // Iscrizione al topic utente per Notifiche Push Personali
+      NotificationService().subscribeToUserTopic(credential.user!.uid);
+
       return newUser;
     } on FirebaseAuthException catch (e) {
       await RateLimiterService().recordAuthFailure();
@@ -238,6 +251,9 @@ class AuthService {
           userModel.isAutoLinked = true;
         }
         
+        // Iscrizione al topic utente per Notifiche Push Personali
+        NotificationService().subscribeToUserTopic(firebaseUser.uid);
+
         return userModel;
       }
 
@@ -275,6 +291,9 @@ class AuthService {
         ...newUser.toMap(),
         'hasGoogleAuth': true,
       });
+
+      // Iscrizione al topic utente per Notifiche Push Personali
+      NotificationService().subscribeToUserTopic(firebaseUser.uid);
 
       return newUser;
     } on FirebaseAuthException catch (e, stacktrace) {

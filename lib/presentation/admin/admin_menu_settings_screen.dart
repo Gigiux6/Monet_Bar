@@ -479,7 +479,9 @@ class _RewardsTabState extends State<_RewardsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return DefaultTabController(
+      length: 2,
+      child: Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
@@ -494,45 +496,71 @@ class _RewardsTabState extends State<_RewardsTab> {
             ),
           ),
         ),
+        const TabBar(
+          indicatorColor: AppTheme.accentGold,
+          labelColor: AppTheme.accentGold,
+          unselectedLabelColor: AppTheme.textSecondary,
+          tabs: [
+            Tab(text: 'Classici'),
+            Tab(text: 'Speciali a Data Fissa'),
+          ],
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: StreamBuilder<List<Reward>>(
             stream: FirestoreService().rewardsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               final list = snapshot.data ?? [];
-              if (list.isEmpty) {
-                return Center(child: Text('Nessun premio disponibile.', style: GoogleFonts.outfit(color: AppTheme.textMuted)));
-              }
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: list.length,
-                itemBuilder: (context, index) {
-                  final item = list[index];
-                  return Card(
-                    color: AppTheme.cardDark,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: AppTheme.accentGold.withOpacity(0.15)),
-                    ),
-                    child: ListTile(
-                      title: Text(item.title, style: GoogleFonts.outfit(color: AppTheme.textCream, fontWeight: FontWeight.bold)),
-                      subtitle: Text('${item.pointsCost} punti', style: GoogleFonts.outfit(color: AppTheme.accentGold)),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent), onPressed: () => _showRewardForm(item: item)),
-                          IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () => _deleteReward(item.id)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              final classicList = list.where((r) => !r.isSpecial).toList();
+              final specialList = list.where((r) => r.isSpecial).toList();
+              
+              return TabBarView(
+                children: [
+                  _buildRewardsList(classicList),
+                  _buildRewardsList(specialList),
+                ],
               );
             },
           ),
         ),
       ],
+      ),
+    );
+  }
+
+  Widget _buildRewardsList(List<Reward> list) {
+    if (list.isEmpty) {
+      return Center(child: Text('Nessun premio disponibile.', style: GoogleFonts.outfit(color: AppTheme.textMuted)));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: list.length,
+      itemBuilder: (context, index) {
+        final item = list[index];
+        return Card(
+          color: AppTheme.cardDark,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: AppTheme.accentGold.withOpacity(0.15)),
+          ),
+          child: ListTile(
+            title: Text(item.title, style: GoogleFonts.outfit(color: AppTheme.textCream, fontWeight: FontWeight.bold)),
+            subtitle: Text(
+              item.isSpecial ? '${item.pointsCost} punti • Attivo il ${item.terms}' : '${item.pointsCost} punti', 
+              style: GoogleFonts.outfit(color: AppTheme.accentGold)
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent), onPressed: () => _showRewardForm(item: item)),
+                IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () => _deleteReward(item.id)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -550,6 +578,9 @@ class _RewardFormState extends State<_RewardForm> {
   late final TextEditingController _titleController;
   late final TextEditingController _descController;
   late final TextEditingController _pointsController;
+  late final TextEditingController _termsController;
+  late final TextEditingController _validityDaysController;
+  late bool _isSpecial;
   bool _isSaving = false;
 
   XFile? _selectedImage;
@@ -580,6 +611,9 @@ class _RewardFormState extends State<_RewardForm> {
     _titleController = TextEditingController(text: item?.title ?? '');
     _descController = TextEditingController(text: item?.description ?? '');
     _pointsController = TextEditingController(text: item != null ? item.pointsCost.toString() : '');
+    _termsController = TextEditingController(text: item?.terms ?? '');
+    _validityDaysController = TextEditingController(text: item != null ? item.validityDays.toString() : '0');
+    _isSpecial = item?.isSpecial ?? false;
     _existingImageUrl = item?.imageUrl;
   }
 
@@ -588,6 +622,8 @@ class _RewardFormState extends State<_RewardForm> {
     _titleController.dispose();
     _descController.dispose();
     _pointsController.dispose();
+    _termsController.dispose();
+    _validityDaysController.dispose();
     super.dispose();
   }
 
@@ -607,9 +643,11 @@ class _RewardFormState extends State<_RewardForm> {
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         pointsCost: int.parse(_pointsController.text.trim()),
-        terms: '',
+        terms: _isSpecial ? _termsController.text.trim() : '',
         iconName: '',
         imageUrl: finalImageUrl,
+        isSpecial: _isSpecial,
+        validityDays: _isSpecial ? (int.tryParse(_validityDaysController.text.trim()) ?? 0) : 0,
       );
       if (widget.itemToEdit == null) {
         await FirestoreService().addReward(reward);
@@ -693,9 +731,52 @@ class _RewardFormState extends State<_RewardForm> {
             controller: _pointsController,
             keyboardType: TextInputType.number,
             style: GoogleFonts.outfit(color: AppTheme.textCream),
-            decoration: const InputDecoration(labelText: 'Costo in Punti', prefixIcon: Icon(Icons.toll, color: AppTheme.accentGold)),
+            decoration: const InputDecoration(labelText: 'Costo in Punti (0 per regalo gratuito)', prefixIcon: Icon(Icons.toll, color: AppTheme.accentGold)),
             validator: (v) => int.tryParse(v!.trim()) == null ? 'Valore intero non valido' : null,
           ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            title: Text('Premio Speciale a Calendario', style: GoogleFonts.outfit(color: AppTheme.textCream)),
+            subtitle: Text('Es: festività fisse o eventi particolari uguali per tutti.', style: GoogleFonts.outfit(color: AppTheme.textSecondary, fontSize: 12)),
+            activeColor: AppTheme.accentGold,
+            value: _isSpecial,
+            onChanged: (v) => setState(() => _isSpecial = v),
+          ),
+          if (_isSpecial) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _termsController,
+              style: GoogleFonts.outfit(color: AppTheme.textCream),
+              decoration: const InputDecoration(
+                labelText: 'Data di attivazione (Giorno-Mese, es: 25-12 per Natale)', 
+                prefixIcon: Icon(Icons.calendar_today, color: AppTheme.accentGold)
+              ),
+              validator: (v) {
+                if (!_isSpecial) return null;
+                final val = v!.trim();
+                if (val.isEmpty) return 'Richiesto per i premi speciali';
+                final parts = val.split('-');
+                if (parts.length != 2) return 'Formato non valido (usa GG-MM)';
+                if (int.tryParse(parts[0]) == null || int.tryParse(parts[1]) == null) return 'Formato non valido';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _validityDaysController,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.outfit(color: AppTheme.textCream),
+              decoration: const InputDecoration(
+                labelText: 'Giorni di tolleranza (es. 3 per renderlo valido ±3 giorni)', 
+                prefixIcon: Icon(Icons.timer_outlined, color: AppTheme.accentGold)
+              ),
+              validator: (v) {
+                if (!_isSpecial) return null;
+                if (int.tryParse(v!.trim()) == null) return 'Inserisci un numero valido (0 per solo il giorno esatto)';
+                return null;
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _isSaving ? null : _submit,

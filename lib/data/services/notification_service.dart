@@ -76,6 +76,31 @@ class NotificationService {
     _isInitialized = true;
   }
 
+  Future<void> subscribeToUserTopic(String uid) async {
+    if (!kIsWeb) {
+      try {
+        await _fcm.subscribeToTopic('user_$uid');
+        debugPrint('Subscribed to topic: user_$uid');
+      } catch (e) {
+        debugPrint('Error subscribing to topic: $e');
+      }
+    }
+  }
+
+  Future<void> unsubscribeFromUserTopic(String uid) async {
+    if (!kIsWeb) {
+      try {
+        await _fcm.unsubscribeFromTopic('user_$uid');
+        debugPrint('Unsubscribed from topic: user_$uid');
+      } catch (e) {
+        debugPrint('Error unsubscribing from topic: $e');
+      }
+    }
+  }
+
+
+
+
   Future<void> _setupLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');

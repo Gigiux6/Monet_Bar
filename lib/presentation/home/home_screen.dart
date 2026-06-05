@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../onboarding/birthday_picker_screen.dart';
 import '../widgets/app_bar_logo.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -102,9 +103,24 @@ class _HomeScreenState extends State<HomeScreen> {
       body: StreamBuilder(
         stream: _userStream,
         builder: (context, snapshot) {
-          final user = snapshot.data ?? AuthService().currentUser;
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(color: AppTheme.accentGold));
+          }
+          
+          final user = snapshot.data;
           if (user == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: Text('Errore caricamento profilo'));
+          }
+
+          if (user.role == 'client' && user.importantDates['onboarding_completed'] != true) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const BirthdayPickerScreen()),
+                );
+              }
+            });
+            return const Center(child: CircularProgressIndicator(color: AppTheme.accentGold));
           }
 
           return SafeArea(

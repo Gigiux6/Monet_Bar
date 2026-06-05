@@ -5,9 +5,13 @@ import 'firebase_options.dart';
 import 'presentation/splash_screen.dart';
 import 'data/services/notification_service.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
+    await initializeDateFormatting('it_IT', null);
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -28,6 +32,14 @@ class MonetApp extends StatelessWidget {
       title: 'Monet Bar Fidelity',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('it', 'IT'),
+      ],
       home: const SplashScreen(),
     );
   }

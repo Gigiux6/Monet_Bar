@@ -6,6 +6,8 @@ class Reward {
   final String iconName;
   final String terms;
   final String? imageUrl;
+  final bool isSpecial;
+  final int validityDays;
 
   Reward({
     required this.id,
@@ -15,6 +17,8 @@ class Reward {
     required this.iconName,
     required this.terms,
     this.imageUrl,
+    this.isSpecial = false,
+    this.validityDays = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +30,8 @@ class Reward {
       'iconName': iconName,
       'terms': terms,
       'imageUrl': imageUrl,
+      'isSpecial': isSpecial,
+      'validityDays': validityDays,
     };
   }
 
@@ -38,6 +44,8 @@ class Reward {
       iconName: map['iconName'] ?? '',
       terms: map['terms'] ?? '',
       imageUrl: map['imageUrl'],
+      isSpecial: map['isSpecial'] ?? false,
+      validityDays: map['validityDays'] ?? 0,
     );
   }
 }
