@@ -28,8 +28,8 @@ service cloud.firestore {
 
       // Transactions nested subcollection
       match /transactions/{transactionId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if isAdmin();
+        allow read, delete: if isOwner(userId) || isAdmin();
+        allow create, update: if isAdmin();
       }
     }
 
@@ -68,7 +68,7 @@ service cloud.firestore {
         || isAdmin()
       );
         
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // 6. News (Promos)

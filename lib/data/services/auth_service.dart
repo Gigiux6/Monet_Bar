@@ -101,6 +101,9 @@ class AuthService {
     if (user != null) {
       await NotificationService().unsubscribeFromUserTopic(user.uid);
     }
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
 
@@ -392,6 +395,11 @@ class AuthService {
 
       // 3. Delete auth account
       await user.delete();
+
+      // Clear Google session if present
+      try {
+        await GoogleSignIn().signOut();
+      } catch (_) {}
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         throw 'Per motivi di sicurezza, fai il logout e accedi di nuovo prima di eliminare l\'account.';
