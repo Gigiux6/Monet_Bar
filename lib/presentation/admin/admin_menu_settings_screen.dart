@@ -583,7 +583,6 @@ class _RewardFormState extends State<_RewardForm> {
   late bool _isSpecial;
   bool _isSaving = false;
 
-  XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
   String? _existingImageUrl;
 
@@ -598,7 +597,6 @@ class _RewardFormState extends State<_RewardForm> {
     if (image != null) {
       final bytes = await image.readAsBytes();
       setState(() {
-        _selectedImage = image;
         _selectedImageBytes = bytes;
       });
     }

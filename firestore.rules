@@ -13,103 +13,73 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (
+        request.auth.token.admin == true || 
+        request.auth.token.role == 'admin'
+      );
     }
 
-    // 1. Users profiles rules
-    // Users can read/write their own profiles.
-    // - On creation, they must initialize points to 0.
-    // - On update, they cannot change their points (only admins can).
+    // 1. User Profiles
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      
-      allow create: if isOwner(userId) 
-        && request.resource.data.points == 0;
-        
-      allow update: if isAdmin() || 
-        (isOwner(userId) && request.resource.data.points == resource.data.points);
-        
+      allow read: if isAuthenticated(); // Consente la ricerca per ID/Username per l'erogazione punti
+      allow create: if isOwner(userId) && request.resource.data.points == 0 && (!('role' in request.resource.data) || request.resource.data.role == 'client');
+      allow update: if (isOwner(userId) && request.resource.data.points == resource.data.points && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
 
-      // Nested subcollections rules (if user-nested coupons/transactions are used)
-      match /coupons/{couponId} {
-        allow read: if isOwner(userId) || isAdmin();
-        
-        allow create: if isAdmin() || (isOwner(userId) 
-          && request.resource.data.status == 'active');
-          
-        allow update: if isAdmin() || (isOwner(userId) 
-          && resource.data.status == 'active' 
-          && request.resource.data.status == 'used');
-          
-        allow delete: if isAdmin();
-      }
-
+      // Transactions nested subcollection
       match /transactions/{transactionId} {
         allow read: if isOwner(userId) || isAdmin();
         allow write: if isAdmin();
       }
     }
 
-    // 2. Menu Items
-    // Public read, write only for admins.
+    // 2. Usernames (Checking registration and resolving username to uid)
+    match /usernames/{username} {
+      allow get: if true; // Public check to see if taken or to resolve UID before logging in
+      allow list: if isAdmin();
+      allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && (resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // 3. Menu Items
     match /menu_items/{itemId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 3. Rewards Catalog
-    // Public read, write only for admins.
+    // 4. Rewards Catalog
     match /rewards/{rewardId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 4. Top-level Coupons Collection (if flat structure is used)
-    // - Users can read their own coupons.
-    // - Users can create coupons with status 'active'.
-    // - Users can update coupon status from 'active' to 'used' (bartender validation simulation).
+    // 5. Coupons (Flat structure)
     match /coupons/{couponId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       
-      allow create: if isAuthenticated() 
-        && (isAdmin() || (request.resource.data.userId == request.auth.uid && request.resource.data.status == 'active'));
+      allow create: if isAuthenticated() && (
+        (request.resource.data.userId == request.auth.uid && request.resource.data.status == 'active')
+        || isAdmin()
+      );
         
-      allow update: if isAuthenticated() 
-        && (resource.data.userId == request.auth.uid || isAdmin()) 
-        && resource.data.status == 'active' 
-        && request.resource.data.status == 'used';
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && resource.data.status == 'active' && request.resource.data.status == 'used')
+        || isAdmin()
+      );
         
       allow delete: if isAdmin();
     }
 
-    // 5. Top-level Transactions Collection (if flat structure is used)
-    // - Users can read their own transactions.
-    // - Writes are admin-only (or generated automatically by backend/admin operations).
-    match /transactions/{transactionId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if isAdmin();
-    }
-
-    // 6. Usernames Index Collection
-    match /usernames/{username} {
-      allow get: if true;
-      allow list: if false;
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow delete: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
-    }
-
-    // 7. News Collection
+    // 6. News (Promos)
     match /news/{newsId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // 8. Notification Requests
-    match /notification_requests/{reqId} {
-      allow write: if isAdmin();
+    // 7. Notification Requests (Push requests)
+    match /notification_requests/{requestId} {
+      allow read, write: if isAdmin();
     }
   }
 }

@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!input.contains('@')) {
         final resolvedEmail = await AuthService().resolveEmailFromUsername(input);
         if (resolvedEmail == null) {
-          throw 'Nome utente non trovato.';
+          throw 'Email o password errate. Riprova.';
         }
         emailToLogin = resolvedEmail;
       }

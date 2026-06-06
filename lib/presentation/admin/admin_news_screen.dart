@@ -179,6 +179,11 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          dateStr,
+                          style: GoogleFonts.outfit(color: AppTheme.accentGold, fontSize: 10, fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           content, 

@@ -26,10 +26,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    final currentUser = AuthService().currentUser;
-    if (currentUser != null) {
-      _usernameController.text = currentUser.name;
-    }
   }
 
   @override
@@ -245,6 +241,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         },
                         decoration: InputDecoration(
                           labelText: 'Username Cliente',
+                          hintText: 'es. claudemonet',
                           prefixIcon: const Icon(Icons.person, color: AppTheme.accentGold),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.qr_code_scanner, color: AppTheme.accentGold),

@@ -7,6 +7,7 @@ class UserModel {
   bool isAutoLinked;
   final Map<String, dynamic> importantDates;
   final List<String> recurringDatesMmDd;
+  final bool isTemporary;
 
   UserModel({
     required this.id,
@@ -17,6 +18,7 @@ class UserModel {
     this.isAutoLinked = false,
     this.importantDates = const {},
     this.recurringDatesMmDd = const [],
+    this.isTemporary = false,
   });
 
   UserModel copyWith({
@@ -28,6 +30,7 @@ class UserModel {
     bool? isAutoLinked,
     Map<String, dynamic>? importantDates,
     List<String>? recurringDatesMmDd,
+    bool? isTemporary,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -38,6 +41,7 @@ class UserModel {
       isAutoLinked: isAutoLinked ?? this.isAutoLinked,
       importantDates: importantDates ?? this.importantDates,
       recurringDatesMmDd: recurringDatesMmDd ?? this.recurringDatesMmDd,
+      isTemporary: isTemporary ?? this.isTemporary,
     );
   }
 
@@ -62,6 +66,7 @@ class UserModel {
       role: map['role'] ?? 'client',
       importantDates: Map<String, dynamic>.from(map['importantDates'] ?? {}),
       recurringDatesMmDd: List<String>.from(map['recurringDatesMmDd'] ?? []),
+      isTemporary: false,
     );
   }
 }

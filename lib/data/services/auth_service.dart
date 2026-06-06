@@ -42,6 +42,7 @@ class AuthService {
             name: firebaseUser.displayName ?? 'Cliente Monet',
             email: firebaseUser.email ?? '',
             pointsBalance: 0,
+            isTemporary: true,
           );
         }
       });
@@ -366,14 +367,27 @@ class AuthService {
       final userDoc = await _db.collection('users').doc(user.uid).get();
       final username = userDoc.data()?['name'] as String?;
 
-      // 2. Delete Firestore data via batch
+      // 2. Fetch all user transactions and coupons to delete them
+      final transactionsSnapshot = await _db.collection('users').doc(user.uid).collection('transactions').get();
+      final couponsSnapshot = await _db.collection('coupons').where('userId', isEqualTo: user.uid).get();
+
+      // 3. Delete Firestore data via batch
       final batch = _db.batch();
       if (username != null && username.isNotEmpty) {
         batch.delete(_db.collection('usernames').doc(username));
       }
       batch.delete(_db.collection('users').doc(user.uid));
-      // Note: non eliminiamo le sottocollezioni (transactions, coupons) per semplicità, 
-      // rimarranno orfane ma inaccessibili.
+
+      // Delete transactions
+      for (var doc in transactionsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Delete coupons
+      for (var doc in couponsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
       await batch.commit();
 
       // 3. Delete auth account
@@ -429,7 +443,7 @@ class AuthService {
       case 'invalid-credential':
       case 'wrong-password':
       case 'user-not-found':
-        return 'Credenziali non valide.';
+        return 'Email o password errate. Riprova.';
       case 'email-already-in-use':
         return 'Questa email è già registrata. Prova ad accedere, oppure usa "Accedi con Google".';
       case 'weak-password':

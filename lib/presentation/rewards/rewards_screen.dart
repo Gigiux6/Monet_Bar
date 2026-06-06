@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
@@ -86,9 +87,39 @@ class _RewardsScreenState extends State<RewardsScreen> {
     if (userId == null) return;
     
     final qrData = 'REDEEM:$userId:${reward.id}';
+    final DateTime openTime = DateTime.now();
+
+    // Listen to coupons to auto-close dialog when scanned remotely
+    StreamSubscription<List<Coupon>>? subscription;
+    subscription = FirestoreService().couponsStream.listen((coupons) {
+      final newlyRedeemed = coupons.any((coupon) =>
+          coupon.rewardId == reward.id &&
+          coupon.claimDate.isAfter(openTime.subtract(const Duration(seconds: 10))) &&
+          coupon.status == 'used');
+
+      if (newlyRedeemed) {
+        subscription?.cancel();
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Premio "${reward.title}" riscattato con successo!',
+              style: GoogleFonts.outfit(color: AppTheme.backgroundDark, fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: Colors.greenAccent,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
 
     Future.delayed(Duration.zero, () {
-      if (!mounted) return;
+      if (!mounted) {
+        subscription?.cancel();
+        return;
+      }
       showDialog(
         context: context,
         builder: (context) {
@@ -142,7 +173,9 @@ class _RewardsScreenState extends State<RewardsScreen> {
             ],
           );
         },
-      );
+      ).then((_) {
+        subscription?.cancel();
+      });
     });
   }  @override
   Widget build(BuildContext context) {
@@ -220,8 +253,6 @@ class _RewardsScreenState extends State<RewardsScreen> {
                       terms: importantDates['anniversary'],
                     ));
                   }
-
-                  final rewards = [...specialRewards, ...baseRewards];
 
                   return StreamBuilder<List<Coupon>>(
                     stream: FirestoreService().couponsStream,

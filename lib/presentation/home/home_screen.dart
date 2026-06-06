@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../onboarding/birthday_picker_screen.dart';
@@ -112,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: Text('Errore caricamento profilo'));
           }
 
-          if (user.role == 'client' && user.importantDates['onboarding_completed'] != true) {
+          if (user.role == 'client' && !user.isTemporary && user.importantDates['onboarding_completed'] != true) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 Navigator.of(context).pushReplacement(
@@ -282,10 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final data = docs[realIndex].data() as Map<String, dynamic>;
                                   final title = data['titolo'] ?? 'Novità';
                                   final desc = data['contenuto'] ?? '';
-                                  final timestamp = data['timestamp_creazione'] as Timestamp?;
-                                  final dateStr = timestamp != null
-                                      ? DateFormat('dd MMM yyyy').format(timestamp.toDate())
-                                      : 'Oggi';
 
                                   return Container(
                                     margin: const EdgeInsets.only(right: 6, left: 6, bottom: 4),
