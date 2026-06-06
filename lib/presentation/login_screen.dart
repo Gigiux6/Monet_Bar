@@ -239,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: AppTheme.backgroundDark,
@@ -263,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
               title: 'Accedi con Google',
               iconData: Icons.g_mobiledata, // Fallback, consider custom icon for Google
               onPressed: () async {
-                Navigator.pop(context); // Chiudi il bottom sheet
+                Navigator.pop(sheetContext); // Chiudi il bottom sheet
                 setState(() => _isLoading = true);
                 try {
                   final user = await AuthService().signInWithGoogle();
@@ -299,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
               title: 'Accedi con Apple',
               iconData: Icons.apple,
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Accesso con Apple non ancora disponibile', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -313,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen> {
               title: 'Accedi con Facebook',
               iconData: Icons.facebook,
               onPressed: () async {
-                Navigator.pop(context); // Chiudi il bottom sheet
+                Navigator.pop(sheetContext); // Chiudi il bottom sheet
                 setState(() => _isLoading = true);
                 try {
                   final user = await AuthService().signInWithFacebook();

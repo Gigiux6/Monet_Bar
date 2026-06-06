@@ -104,6 +104,7 @@ class AuthService {
     }
     try {
       await GoogleSignIn().signOut();
+      await GoogleSignIn().disconnect();
     } catch (_) {}
     try {
       await FacebookAuth.instance.logOut();
