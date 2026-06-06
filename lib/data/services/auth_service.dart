@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'rate_limiter_service.dart';
@@ -103,6 +104,9 @@ class AuthService {
     }
     try {
       await GoogleSignIn().signOut();
+    } catch (_) {}
+    try {
+      await FacebookAuth.instance.logOut();
     } catch (_) {}
     await _auth.signOut();
   }
@@ -332,6 +336,102 @@ class AuthService {
     }
   }
 
+  /// Sign in with Facebook
+  Future<UserModel?> signInWithFacebook() async {
+    await RateLimiterService().checkAuthLimit();
+    try {
+      print('--- STARTING FACEBOOK SIGN IN ---');
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        final credential = FacebookAuthProvider.credential(accessToken.token);
+
+        final userCredential = await _auth.signInWithCredential(credential);
+        final firebaseUser = userCredential.user;
+        if (firebaseUser == null) return null;
+
+        // Workaround for Flutter Web Firestore websocket sync delay
+        final userDoc = await _db.collection('users').doc(firebaseUser.uid).snapshots().first.timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw 'La connessione al database sta impiegando troppo tempo. Riprova.',
+        );
+
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          final userModel = UserModel.fromMap({
+            'id': firebaseUser.uid,
+            ...data,
+          });
+
+          if (data['hasFacebookAuth'] != true) {
+            await _db.collection('users').doc(firebaseUser.uid).update({'hasFacebookAuth': true}).timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => throw 'Timeout aggiornamento dati utente. Riprova.',
+            );
+            userModel.isAutoLinked = true;
+          }
+
+          NotificationService().subscribeToUserTopic(firebaseUser.uid);
+          return userModel;
+        }
+
+        // Se l'utente non esiste, procediamo con la registrazione silente.
+        String baseUsername = (firebaseUser.displayName?.isNotEmpty ?? false)
+            ? firebaseUser.displayName!.replaceAll(' ', '_').toLowerCase()
+            : (firebaseUser.email?.split('@')[0] ?? 'fb_user').toLowerCase();
+        
+        baseUsername = baseUsername.replaceAll(RegExp(r'[^a-z0-9_]'), '');
+        if (baseUsername.isEmpty) baseUsername = 'fb_user';
+
+        String finalUsername = baseUsername;
+        int counter = 1;
+        while (await isUsernameTaken(finalUsername)) {
+          finalUsername = '$baseUsername$counter';
+          counter++;
+        }
+
+        final newUser = UserModel(
+          id: firebaseUser.uid,
+          name: finalUsername,
+          email: firebaseUser.email ?? '',
+          pointsBalance: 0,
+        );
+
+        await _db.collection('usernames').doc(finalUsername).set({
+          'email': firebaseUser.email ?? '',
+          'uid': firebaseUser.uid,
+        });
+
+        await _db.collection('users').doc(firebaseUser.uid).set({
+          ...newUser.toMap(),
+          'hasFacebookAuth': true,
+        });
+
+        NotificationService().subscribeToUserTopic(firebaseUser.uid);
+
+        return newUser;
+      } else if (result.status == LoginStatus.cancelled) {
+        print('--- FACEBOOK LOGIN CANCELLED ---');
+        return null;
+      } else {
+        throw result.message ?? 'Errore sconosciuto';
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential') {
+        throw 'Hai già un account con questa email. Accedi con Google o Email/Password per collegare Facebook.';
+      }
+      await RateLimiterService().recordAuthFailure();
+      throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
+    } catch (e) {
+      if (e is RateLimitExceededException) rethrow;
+      await RateLimiterService().recordAuthFailure();
+      throw 'Errore durante l\'accesso con Facebook: $e';
+    }
+  }
+
   /// Link an existing email/password account with a Google credential
   Future<UserModel?> linkGoogleAccount(String email, String password, AuthCredential credential) async {
     try {
@@ -399,6 +499,11 @@ class AuthService {
       // Clear Google session if present
       try {
         await GoogleSignIn().signOut();
+      } catch (_) {}
+      
+      // Clear Facebook session if present
+      try {
+        await FacebookAuth.instance.logOut();
       } catch (_) {}
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {

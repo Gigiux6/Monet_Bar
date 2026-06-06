@@ -312,14 +312,36 @@ class _LoginScreenState extends State<LoginScreen> {
             _buildSocialButton(
               title: 'Accedi con Facebook',
               iconData: Icons.facebook,
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Accesso con Facebook non ancora disponibile', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
+              onPressed: () async {
+                Navigator.pop(context); // Chiudi il bottom sheet
+                setState(() => _isLoading = true);
+                try {
+                  final user = await AuthService().signInWithFacebook();
+                  if (user != null && mounted) {
+                    if (user.isAutoLinked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Bentornato! I tuoi account sono stati uniti in modo sicuro.', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                          backgroundColor: AppTheme.accentGold,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                    _navigateToHome(user);
+                  }
+                } on NeedsPasswordForLinkingException catch (e) {
+                  if (mounted) {
+                    _showLinkAccountDialog(e.credential, e.email);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('$e'), backgroundColor: Colors.redAccent),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isLoading = false);
+                }
               },
             ),
             const SizedBox(height: 16),

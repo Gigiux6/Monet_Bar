@@ -10,8 +10,20 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>INCOLLA_QUI_IL_REVERSED_CLIENT_ID</string>
+				<string>fb933198216422651</string>
 			</array>
 		</dict>
+	</array>
+	<key>FacebookAppID</key>
+	<string>933198216422651</string>
+	<key>FacebookClientToken</key>
+	<string>c1c25feb7f11599396a0421d21fb42bf</string>
+	<key>FacebookDisplayName</key>
+	<string>Monet</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+	  <string>fbapi</string>
+	  <string>fb-messenger-share-api</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Necessario per scansionare la Fidelity Card dei clienti</string>
