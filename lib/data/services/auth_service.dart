@@ -203,25 +203,27 @@ class AuthService {
 
   /// Sign in with Google
   Future<UserModel?> signInWithGoogle() async {
-    await RateLimiterService().checkAuthLimit();
-    GoogleSignInAccount? googleUser;
     AuthCredential? credential;
+    GoogleSignInAccount? googleUser;
     try {
       print('--- STARTING GOOGLE SIGN IN ---');
-      UserCredential userCredential;
+      late UserCredential userCredential;
 
       if (kIsWeb) {
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
         userCredential = await _auth.signInWithPopup(googleProvider);
         print('Firebase Auth credential created successfully (Web Popup)');
+        await RateLimiterService().checkAuthLimit();
       } else {
         googleUser = await GoogleSignIn().signIn();
         
         print('Google User: ${googleUser?.email}');
         if (googleUser == null) {
-          print('--- L\'utente ha annullato il login o l\'API ha fallito silenziosamente ---');
+          print('--- GOOGLE SIGN IN CANCELLED ---');
           return null;
         }
+
+        await RateLimiterService().checkAuthLimit();
 
         final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
         print('Google Auth retrieved successfully');
@@ -339,12 +341,12 @@ class AuthService {
 
   /// Sign in with Facebook
   Future<UserModel?> signInWithFacebook() async {
-    await RateLimiterService().checkAuthLimit();
     try {
       print('--- STARTING FACEBOOK SIGN IN ---');
       final LoginResult result = await FacebookAuth.instance.login();
 
       if (result.status == LoginStatus.success) {
+        await RateLimiterService().checkAuthLimit();
         final AccessToken accessToken = result.accessToken!;
         final credential = FacebookAuthProvider.credential(accessToken.tokenString);
 
