@@ -4,6 +4,8 @@ import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'presentation/splash_screen.dart';
 import 'data/services/notification_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -20,6 +22,20 @@ void main() async {
     // If Firebase initialization fails (e.g. mock/no config on platform), log it and continue
     debugPrint("Firebase initialization info/error: $e");
   }
+
+  if (kIsWeb) {
+    try {
+      await FacebookAuth.i.webAndDesktopInitialize(
+        appId: "933198216422651",
+        cookie: true,
+        xfbml: true,
+        version: "v15.0",
+      );
+    } catch (e) {
+      debugPrint("Facebook web initialization error: $e");
+    }
+  }
+
   runApp(const MonetApp());
 }
 
