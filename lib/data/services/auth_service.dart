@@ -103,11 +103,11 @@ class AuthService {
       await NotificationService().unsubscribeFromUserTopic(user.uid);
     }
     try {
-      await GoogleSignIn().signOut();
-      await GoogleSignIn().disconnect();
+      await GoogleSignIn().signOut().timeout(const Duration(seconds: 2));
+      await GoogleSignIn().disconnect().timeout(const Duration(seconds: 2));
     } catch (_) {}
     try {
-      await FacebookAuth.instance.logOut();
+      await FacebookAuth.instance.logOut().timeout(const Duration(seconds: 2));
     } catch (_) {}
     await _auth.signOut();
   }
