@@ -345,7 +345,7 @@ class AuthService {
 
       if (result.status == LoginStatus.success) {
         final AccessToken accessToken = result.accessToken!;
-        final credential = FacebookAuthProvider.credential(accessToken.token);
+        final credential = FacebookAuthProvider.credential(accessToken.tokenString);
 
         final userCredential = await _auth.signInWithCredential(credential);
         final firebaseUser = userCredential.user;
