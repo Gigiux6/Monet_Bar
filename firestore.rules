@@ -21,7 +21,7 @@ service cloud.firestore {
 
     // 1. User Profiles
     match /users/{userId} {
-      allow read: if isAuthenticated(); // Consente la ricerca per ID/Username per l'erogazione punti
+      allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.points == 0 && (!('role' in request.resource.data) || request.resource.data.role == 'client');
       allow update: if (isOwner(userId) && request.resource.data.points == resource.data.points && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
