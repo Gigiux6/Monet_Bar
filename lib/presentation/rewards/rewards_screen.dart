@@ -29,9 +29,18 @@ class _RewardsScreenState extends State<RewardsScreen> {
       int day = 1;
 
       if (parts.length == 3) {
-        // Format YYYY-MM-DD
-        month = int.tryParse(parts[1]) ?? 1;
-        day = int.tryParse(parts[2]) ?? 1;
+        if (parts[0].length == 4) {
+          // Format YYYY-MM-DD
+          month = int.tryParse(parts[1]) ?? 1;
+          day = int.tryParse(parts[2]) ?? 1;
+        } else if (parts[2].length == 4) {
+          // Format DD-MM-YYYY
+          day = int.tryParse(parts[0]) ?? 1;
+          month = int.tryParse(parts[1]) ?? 1;
+        } else {
+          month = int.tryParse(parts[1]) ?? 1;
+          day = int.tryParse(parts[2]) ?? 1;
+        }
       } else if (parts.length == 2) {
         // Format DD-MM (Italian format)
         day = int.tryParse(parts[0]) ?? 1;
@@ -39,6 +48,17 @@ class _RewardsScreenState extends State<RewardsScreen> {
       } else {
         return -1;
       }
+
+      // Fix mistakenly swapped Month-Day
+      if (month > 12 && day <= 12) {
+        final temp = day;
+        day = month;
+        month = temp;
+      }
+
+      // Clamp values to avoid massive DateTime overflow bugs
+      month = month.clamp(1, 12);
+      day = day.clamp(1, 31);
 
       DateTime now = DateTime.now();
       DateTime today = DateTime(now.year, now.month, now.day);
