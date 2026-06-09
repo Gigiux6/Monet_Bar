@@ -159,10 +159,7 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
             final title = data['titolo'] ?? '';
             final content = data['contenuto'] ?? '';
             
-            final timestamp = data['timestamp_creazione'] as Timestamp?;
-            final dateStr = timestamp != null
-                ? DateFormat('dd MMM yyyy').format(timestamp.toDate())
-                : 'Oggi';
+            // Date removed as per request
 
             return Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -179,11 +176,7 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          dateStr,
-                          style: GoogleFonts.outfit(color: AppTheme.accentGold, fontSize: 10, fontWeight: FontWeight.w500),
-                        ),
+                        // Date removed as per request
                         const SizedBox(height: 4),
                         Text(
                           content, 
