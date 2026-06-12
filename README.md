@@ -2,6 +2,22 @@
 
 **Monet Bar** è un'applicazione mobile innovativa sviluppata in Flutter e Firebase, pensata per modernizzare l'interazione tra bar e clienti tramite un sistema digitale di fidelity card, premi e gestione del menu.
 
+## 🌐 Prova l'App (Versione Web)
+Mentre l'app non è ancora disponibile sugli store ufficiali, puoi provare la versione web (PWA) direttamente dal tuo browser a questo link:
+👉 **[Clicca qui per aprire Monet Bar Web](https://monet-bar.web.app/)**
+*(Nota: L'interfaccia web include le stesse funzionalità della controparte mobile).*
+
+## 📸 Screenshot dell'App
+
+Qui sotto puoi vedere in anteprima il design elegante e moderno dell'applicazione:
+
+<p align="center">
+  <img src="assets/screenshots/home.jpeg" width="30%" />
+  <img src="assets/screenshots/menu.jpeg" width="30%" />
+  <img src="assets/screenshots/premi.jpeg" width="30%" />
+</p>
+
+
 ## 🌟 Funzionalità Principali
 
 ### 👥 Lato Cliente
