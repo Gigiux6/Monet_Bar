@@ -5,12 +5,16 @@ import '../../data/services/auth_service.dart';
 import '../login_screen.dart';
 import '../widgets/app_bar_logo.dart';
 import 'change_password_bottom_sheet.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isEmailProvider = user?.providerData.any((p) => p.providerId == 'password') ?? false;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -32,12 +36,13 @@ class SettingsScreen extends StatelessWidget {
         children: [
           // SEZIONE ACCOUNT
           _buildSectionHeader('Account'),
-          _buildSettingsTile(
-            icon: Icons.vpn_key,
-            title: 'Cambia Password',
-            subtitle: 'Modifica la tua password di accesso',
-            onTap: () => ChangePasswordBottomSheet.show(context),
-          ),
+          if (isEmailProvider)
+            _buildSettingsTile(
+              icon: Icons.vpn_key,
+              title: 'Cambia Password',
+              subtitle: 'Modifica la tua password di accesso',
+              onTap: () => ChangePasswordBottomSheet.show(context),
+            ),
           _buildSettingsTile(
             icon: Icons.logout,
             title: 'Logout',

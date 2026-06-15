@@ -593,42 +593,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (reward.pointsCost > 0) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    canRedeem ? 'Sbloccato!' : 'Progresso',
-                                    style: GoogleFonts.outfit(
-                                      color: canRedeem ? Colors.greenAccent : AppTheme.textMuted,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${(progress * 100).toInt()}%',
-                                    style: GoogleFonts.outfit(
-                                      color: canRedeem ? Colors.greenAccent : AppTheme.accentGold,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: LinearProgressIndicator(
-                                  value: progress,
-                                  backgroundColor: AppTheme.cardDark,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    canRedeem ? Colors.greenAccent : AppTheme.accentGold,
-                                  ),
-                                  minHeight: 4,
-                                ),
-                              ),
-                            ],
+
                           ],
                         ),
                       ),
@@ -666,6 +631,43 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  
+                  if (reward.pointsCost > 0) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          canRedeem ? 'Sbloccato!' : 'Progresso',
+                          style: GoogleFonts.outfit(
+                            color: canRedeem ? Colors.greenAccent : AppTheme.textMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: GoogleFonts.outfit(
+                            color: canRedeem ? Colors.greenAccent : AppTheme.accentGold,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: AppTheme.cardDark,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          canRedeem ? Colors.greenAccent : AppTheme.accentGold,
+                        ),
+                        minHeight: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   
                   // Action Button on Card
                   SizedBox(

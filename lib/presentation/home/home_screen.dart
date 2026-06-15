@@ -24,6 +24,29 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _promoTimer;
   late final Stream<dynamic> _userStream;
   late final Stream<QuerySnapshot> _newsStream;
+  late final Stream<QuerySnapshot> _galleryStream;
+
+  final PageController _galleryController = PageController(viewportFraction: 0.95);
+  int _currentGalleryPage = 0;
+  int _galleryLength = 0;
+  Timer? _galleryTimer;
+
+  void _startGalleryTimer() {
+    _galleryTimer?.cancel();
+    _galleryTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || _galleryLength <= 1) return;
+      setState(() {
+        _currentGalleryPage++;
+        if (_galleryController.hasClients) {
+          _galleryController.animateToPage(
+            _currentGalleryPage,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      });
+    });
+  }
 
   void _startPromoTimer() {
     _promoTimer?.cancel();
@@ -51,13 +74,21 @@ class _HomeScreenState extends State<HomeScreen> {
         .where('is_active', isEqualTo: true)
         .snapshots();
 
+    _galleryStream = FirebaseFirestore.instance
+        .collection('gallery')
+        .where('is_active', isEqualTo: true)
+        .snapshots();
+
     _startPromoTimer();
+    _startGalleryTimer();
   }
 
   @override
   void dispose() {
     _promoTimer?.cancel();
     _promoController.dispose();
+    _galleryTimer?.cancel();
+    _galleryController.dispose();
     super.dispose();
   }
 
@@ -395,6 +426,117 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Gallery Title
+                    Text(
+                      'Il Nostro Locale',
+                      style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 22),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Gallery Carousel
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _galleryStream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const SizedBox(); // Silently hide if error
+                        }
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: AppTheme.accentGold));
+                        }
+
+                        final docs = snapshot.data?.docs.toList() ?? [];
+                        if (docs.isEmpty) {
+                          return const SizedBox(); // Hide if empty
+                        }
+
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted && _galleryLength != docs.length) {
+                            setState(() {
+                              _galleryLength = docs.length;
+                            });
+                          }
+                        });
+
+                        return Column(
+                          children: [
+                            SizedBox(
+                              height: 200,
+                              child: PageView.builder(
+                                controller: _galleryController,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentGalleryPage = index;
+                                  });
+                                  _startGalleryTimer();
+                                },
+                                itemBuilder: (context, index) {
+                                  final realIndex = index % docs.length;
+                                  final data = docs[realIndex].data() as Map<String, dynamic>;
+                                  final imageUrl = data['imageUrl'] ?? '';
+
+                                  return Container(
+                                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
+                                      color: AppTheme.cardDark,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: imageUrl.isNotEmpty
+                                          ? Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.cover,
+                                              loadingBuilder: (context, child, loadingProgress) {
+                                                if (loadingProgress == null) return child;
+                                                return Center(
+                                                  child: CircularProgressIndicator(
+                                                    color: AppTheme.accentGold,
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded /
+                                                            loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                  ),
+                                                );
+                                              },
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return const Center(
+                                                  child: Icon(Icons.broken_image, color: AppTheme.textMuted, size: 40),
+                                                );
+                                              },
+                                            )
+                                          : const Center(
+                                              child: Icon(Icons.image, color: AppTheme.textMuted, size: 40),
+                                            ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            // Dot Indicator
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                docs.length,
+                                (index) => Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: (_currentGalleryPage % docs.length) == index
+                                        ? AppTheme.accentGold
+                                        : AppTheme.textMuted.withOpacity(0.4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 28),
 
