@@ -36,13 +36,38 @@ class SettingsScreen extends StatelessWidget {
         children: [
           // SEZIONE ACCOUNT
           _buildSectionHeader('Account'),
-          if (isEmailProvider)
-            _buildSettingsTile(
-              icon: Icons.vpn_key,
-              title: 'Cambia Password',
-              subtitle: 'Modifica la tua password di accesso',
-              onTap: () => ChangePasswordBottomSheet.show(context),
-            ),
+          _buildSettingsTile(
+            icon: Icons.vpn_key,
+            title: 'Cambia Password',
+            subtitle: 'Modifica la tua password di accesso',
+            onTap: () {
+              if (isEmailProvider) {
+                ChangePasswordBottomSheet.show(context);
+              } else {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: AppTheme.surfaceDark,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: Text(
+                      'Azione non consentita',
+                      style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold),
+                    ),
+                    content: Text(
+                      'Impossibile cambiare la password perché sei autenticato con Google o Facebook.',
+                      style: GoogleFonts.outfit(color: AppTheme.textSecondary),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('OK', style: GoogleFonts.outfit(color: AppTheme.accentGold, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+          ),
           _buildSettingsTile(
             icon: Icons.logout,
             title: 'Logout',
