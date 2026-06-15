@@ -595,6 +595,28 @@ class _RewardsScreenState extends State<RewardsScreen> {
                             ),
                             if (reward.pointsCost > 0) ...[
                               const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    canRedeem ? 'Sbloccato!' : 'Progresso',
+                                    style: GoogleFonts.outfit(
+                                      color: canRedeem ? Colors.greenAccent : AppTheme.textMuted,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${(progress * 100).toInt()}%',
+                                    style: GoogleFonts.outfit(
+                                      color: canRedeem ? Colors.greenAccent : AppTheme.accentGold,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(2),
                                 child: LinearProgressIndicator(
