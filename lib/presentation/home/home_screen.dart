@@ -475,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 itemBuilder: (context, index) {
                                   final realIndex = index % docs.length;
                                   final data = docs[realIndex].data() as Map<String, dynamic>;
-                                  final imageUrl = data['imageUrl'] ?? '';
+                                  final imageUrl = data['imageUrl'] ?? data['imageurl'] ?? '';
 
                                   return Container(
                                     margin: const EdgeInsets.symmetric(horizontal: 6),
