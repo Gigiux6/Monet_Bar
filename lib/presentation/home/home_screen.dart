@@ -6,6 +6,7 @@ import '../../data/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../onboarding/birthday_picker_screen.dart';
 import '../widgets/app_bar_logo.dart';
 
@@ -487,26 +488,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(15),
                                       child: imageUrl.isNotEmpty
-                                          ? Image.network(
-                                              imageUrl,
+                                          ? CachedNetworkImage(
+                                              imageUrl: imageUrl,
                                               fit: BoxFit.cover,
-                                              loadingBuilder: (context, child, loadingProgress) {
-                                                if (loadingProgress == null) return child;
-                                                return Center(
-                                                  child: CircularProgressIndicator(
-                                                    color: AppTheme.accentGold,
-                                                    value: loadingProgress.expectedTotalBytes != null
-                                                        ? loadingProgress.cumulativeBytesLoaded /
-                                                            loadingProgress.expectedTotalBytes!
-                                                        : null,
-                                                  ),
-                                                );
-                                              },
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return const Center(
-                                                  child: Icon(Icons.broken_image, color: AppTheme.textMuted, size: 40),
-                                                );
-                                              },
+                                              memCacheHeight: 600, // Limita la decodifica in RAM a una risoluzione ragionevole
+                                              placeholder: (context, url) => const Center(
+                                                child: CircularProgressIndicator(color: AppTheme.accentGold),
+                                              ),
+                                              errorWidget: (context, url, error) => const Center(
+                                                child: Icon(Icons.broken_image, color: AppTheme.textMuted, size: 40),
+                                              ),
                                             )
                                           : const Center(
                                               child: Icon(Icons.image, color: AppTheme.textMuted, size: 40),
