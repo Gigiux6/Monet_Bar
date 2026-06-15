@@ -21,6 +21,10 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAdmin() && request.resource.contentType.matches('image/.*') && request.resource.size < 5 * 1024 * 1024;
     }
+    match /gallery_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && request.resource.contentType.matches('image/.*') && request.resource.size < 5 * 1024 * 1024;
+    }
     
     // Fallback rule
     match /{allPaths=**} {
