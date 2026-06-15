@@ -82,5 +82,11 @@ service cloud.firestore {
     match /notification_requests/{requestId} {
       allow read, write: if isAdmin();
     }
+
+    // 8. Gallery (Venue images)
+    match /gallery/{imageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
   }
 }
