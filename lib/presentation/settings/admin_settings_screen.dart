@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import '../login_screen.dart';
 import '../widgets/app_bar_logo.dart';
+import 'change_password_bottom_sheet.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
@@ -31,6 +32,12 @@ class AdminSettingsScreen extends StatelessWidget {
         children: [
           // SEZIONE ACCOUNT
           _buildSectionHeader('Account'),
+          _buildSettingsTile(
+            icon: Icons.vpn_key,
+            title: 'Cambia Password',
+            subtitle: 'Modifica la tua password di accesso',
+            onTap: () => ChangePasswordBottomSheet.show(context),
+          ),
           _buildSettingsTile(
             icon: Icons.logout,
             title: 'Logout',
@@ -181,6 +188,7 @@ class AdminSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
+    // Step 1: Confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -206,7 +214,7 @@ class AdminSettingsScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: Text('ELIMINA', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text('CONTINUA', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -214,20 +222,20 @@ class AdminSettingsScreen extends StatelessWidget {
     );
 
     if (confirm != true) return;
+    if (!context.mounted) return;
 
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-    }
+    // Show loading and attempt deletion
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: AppTheme.accentGold)),
+    );
 
     try {
       await AuthService().deleteAccount();
-      
+
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // chiude loading dialog
+        Navigator.of(context, rootNavigator: true).pop(); // close loading
         Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
           (route) => false,
@@ -235,7 +243,7 @@ class AdminSettingsScreen extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // chiude loading dialog
+        Navigator.of(context, rootNavigator: true).pop(); // close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString(), style: GoogleFonts.outfit(color: Colors.white)),

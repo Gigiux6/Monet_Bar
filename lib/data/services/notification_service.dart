@@ -49,6 +49,16 @@ class NotificationService {
       debugPrint('User declined or has not accepted notification permissions');
     }
 
+    // Permette la visualizzazione delle notifiche in foreground su iOS nativamente
+    // In questo modo l'app aperta mostrerà il banner invece di nasconderlo.
+    if (!kIsWeb) {
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
+
     // Iscriviti al topic globale per ricevere le novità (se non siamo su Web, il topic pub/sub funziona meglio nativamente)
     if (!kIsWeb) {
       try {
@@ -59,7 +69,7 @@ class NotificationService {
       }
     }
 
-    // Configura notifiche locali per visualizzarle quando l'app è in FOREGROUND
+    // Configura notifiche locali per visualizzarle quando l'app è in FOREGROUND (Android)
     await _setupLocalNotifications();
 
     // Ascolta i messaggi in foreground
@@ -102,6 +112,9 @@ class NotificationService {
 
 
   Future<void> _setupLocalNotifications() async {
+    // Le notifiche locali non ci servono su Web in questa forma
+    if (kIsWeb) return;
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -141,12 +154,17 @@ class NotificationService {
   }
 
   void _showLocalNotification(RemoteMessage message) {
+    if (kIsWeb) return;
+
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
 
-    if (notification != null && android != null && !kIsWeb) {
+    if (notification != null && android != null) {
+      // Garantiamo un ID sempre unico per evitare sovrascritture di notifiche visive simultanee
+      final int uniqueId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
       _localNotificationsPlugin.show(
-        id: notification.hashCode,
+        id: uniqueId,
         title: notification.title,
         body: notification.body,
         notificationDetails: const NotificationDetails(
@@ -155,8 +173,8 @@ class NotificationService {
             'High Importance Notifications',
             channelDescription: 'This channel is used for important notifications.',
             icon: '@drawable/ic_notification',
-            color: const Color(0xFFD4AF37),
-            largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+            color: Color(0xFFD4AF37),
+            largeIcon: DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
             importance: Importance.max,
             priority: Priority.high,
           ),

@@ -15,7 +15,7 @@ class MockAuthService {
       id: 'monet_customer_777',
       name: 'Claude Monet',
       email: 'claude.monet@bar.it',
-      pointsBalance: 120, // Start with some initial points to showcase progress bar
+      points: 120, // Start with some initial points to showcase progress bar
     );
     _userController.add(_currentUser);
   }
@@ -32,11 +32,11 @@ class MockAuthService {
       id: 'monet_customer_777',
       name: 'Claude Monet',
       email: email,
-      pointsBalance: 120,
+      points: 120,
     );
     _userController.add(_currentUser);
     // Sync points state with MockFirestoreService
-    MockFirestoreService()._syncUserPoints(_currentUser!.pointsBalance);
+    MockFirestoreService()._syncUserPoints(_currentUser!.points);
     return _currentUser;
   }
 
@@ -48,7 +48,7 @@ class MockAuthService {
 
   void updateLocalUserPoints(int newPoints) {
     if (_currentUser != null) {
-      _currentUser = _currentUser!.copyWith(pointsBalance: newPoints);
+      _currentUser = _currentUser!.copyWith(points: newPoints);
       _userController.add(_currentUser);
     }
   }
@@ -168,7 +168,7 @@ class MockFirestoreService {
 
     // If it's the current user, update their points
     if (currentUser != null && currentUser.id == userId) {
-      final updatedPoints = currentUser.pointsBalance + points;
+      final updatedPoints = currentUser.points + points;
       MockAuthService().updateLocalUserPoints(updatedPoints);
     }
     _notifyAll();
@@ -183,12 +183,12 @@ class MockFirestoreService {
       return {'success': false, 'message': 'Utente non autenticato'};
     }
 
-    if (currentUser.pointsBalance < reward.pointsCost) {
+    if (currentUser.points < reward.pointsCost) {
       return {'success': false, 'message': 'Punti insufficienti per riscattare questo premio'};
     }
 
     // Deduct points
-    final newBalance = currentUser.pointsBalance - reward.pointsCost;
+    final newBalance = currentUser.points - reward.pointsCost;
     MockAuthService().updateLocalUserPoints(newBalance);
 
     // Create coupon

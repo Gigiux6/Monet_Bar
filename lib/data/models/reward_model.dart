@@ -21,9 +21,34 @@ class Reward {
     this.validityDays = 0,
   });
 
+  // Metodo essenziale per la modifica immutabile (utile per il pannello Admin)
+  Reward copyWith({
+    String? id,
+    String? title,
+    String? description,
+    int? pointsCost,
+    String? iconName,
+    String? terms,
+    String? imageUrl,
+    bool? isSpecial,
+    int? validityDays,
+  }) {
+    return Reward(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      pointsCost: pointsCost ?? this.pointsCost,
+      iconName: iconName ?? this.iconName,
+      terms: terms ?? this.terms,
+      imageUrl: imageUrl ?? this.imageUrl,
+      isSpecial: isSpecial ?? this.isSpecial,
+      validityDays: validityDays ?? this.validityDays,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      // 'id': id, -> RIMOSSO: Evitiamo di duplicare l'ID dentro il payload Firestore
       'title': title,
       'description': description,
       'pointsCost': pointsCost,
@@ -37,9 +62,10 @@ class Reward {
 
   factory Reward.fromMap(Map<String, dynamic> map, String docId) {
     return Reward(
-      id: docId,
+      id: docId, // L'ID proviene dal Documento, non dai campi interni
       title: map['title'] ?? '',
       description: map['description'] ?? '',
+      // Supporto per database vecchi che usavano 'pointsRequired'
       pointsCost: map['pointsCost'] ?? map['pointsRequired'] ?? 0,
       iconName: map['iconName'] ?? '',
       terms: map['terms'] ?? '',

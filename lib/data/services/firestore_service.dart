@@ -23,7 +23,7 @@ class FirestoreService {
           final list = snapshot.docs
               .map((doc) => MenuItem.fromMap(doc.data(), doc.id))
               .toList();
-          list.sort((a, b) => a.name.compareTo(b.name));
+          list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
           return list;
         });
   }
@@ -50,7 +50,7 @@ class FirestoreService {
         .orderBy('claimDate', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => Coupon.fromMap({'id': doc.id, ...doc.data()}))
+            .map((doc) => Coupon.fromMap(doc.data(), doc.id))
             .toList());
   }
 
@@ -83,7 +83,7 @@ class FirestoreService {
       await docRef.set(map);
     } catch (e) {
       print("Errore nell'aggiunta del prodotto: $e");
-      throw e;
+      rethrow;
     }
   }
 
@@ -94,7 +94,7 @@ class FirestoreService {
       await _db.collection('menu_items').doc(item.id).update(item.toMap());
     } catch (e) {
       print("Errore nell'aggiornamento del prodotto: $e");
-      throw e;
+      rethrow;
     }
   }
 
@@ -105,7 +105,7 @@ class FirestoreService {
       await _db.collection('menu_items').doc(id).delete();
     } catch (e) {
       print("Errore nell'eliminazione del prodotto: $e");
-      throw e;
+      rethrow;
     }
   }
 
@@ -125,7 +125,7 @@ class FirestoreService {
       await _db.collection('rewards').doc(reward.id).update(reward.toMap());
     } catch (e) {
       print("Errore nell'aggiornamento del premio: $e");
-      throw e;
+      rethrow;
     }
   }
 
@@ -136,7 +136,7 @@ class FirestoreService {
       await _db.collection('rewards').doc(id).delete();
     } catch (e) {
       print("Errore nell'eliminazione del premio: $e");
-      throw e;
+      rethrow;
     }
   }
 
@@ -190,8 +190,65 @@ class FirestoreService {
       return true;
     } catch (e) {
       print("Errore nell'aggiunta punti: $e");
-      throw e; // Rilancia per mostrare l'errore in UI
+      rethrow; // Rilancia per mostrare l'errore in UI
     }
+  }
+
+  /// Helper privato per centralizzare la logica transazionale del riscatto premi.
+  Future<Map<String, dynamic>> _processRewardRedemption({
+    required String userId,
+    required String rewardId,
+    required String rewardTitle,
+    required int pointsCost,
+    required String couponInitialStatus,
+    required String transactionDescription,
+  }) async {
+    final userRef = _db.collection('users').doc(userId);
+    final couponRef = _db.collection('coupons').doc();
+    final txRef = userRef.collection('transactions').doc();
+
+    return await _db.runTransaction<Map<String, dynamic>>((transaction) async {
+      final userSnapshot = await transaction.get(userRef);
+      if (!userSnapshot.exists) {
+        return {'success': false, 'message': 'Profilo utente non trovato'};
+      }
+
+      final currentPoints = userSnapshot.data()?['points'] ?? userSnapshot.data()?['pointsBalance'] ?? 0;
+      if (currentPoints < pointsCost) {
+        return {'success': false, 'message': 'Punti insufficienti per questo premio'};
+      }
+
+      // 1. Scala i punti
+      final newBalance = currentPoints - pointsCost;
+      transaction.update(userRef, {'points': newBalance});
+
+      // 2. Genera il Coupon (Stato dipendente se generato da utente o admin)
+      final couponId = 'CPN-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-${rewardId.toUpperCase()}';
+      final coupon = Coupon(
+        id: couponId,
+        rewardId: rewardId,
+        rewardTitle: rewardTitle,
+        pointsSpent: pointsCost,
+        userId: userId,
+        claimDate: DateTime.now(),
+        expiryDate: couponInitialStatus == 'active' ? DateTime.now().add(const Duration(days: 30)) : DateTime.now(),
+        status: couponInitialStatus,
+      );
+      transaction.set(couponRef, coupon.toMap());
+
+      // 3. Scrive lo storico Transazione
+      final tx = TransactionModel(
+        id: txRef.id,
+        userId: userId,
+        points: pointsCost,
+        type: 'redeem',
+        description: transactionDescription,
+        date: DateTime.now(),
+      );
+      transaction.set(txRef, tx.toMap());
+
+      return {'success': true, 'coupon': coupon, 'rewardTitle': rewardTitle};
+    });
   }
 
   /// Redeem a reward. Deducts points and generates a coupon atomically.
@@ -203,54 +260,14 @@ class FirestoreService {
     }
 
     try {
-      final userRef = _db.collection('users').doc(userId);
-      final couponRef = _db.collection('coupons').doc();
-      final txRef = userRef.collection('transactions').doc();
-
-      final result = await _db.runTransaction<Map<String, dynamic>>((transaction) async {
-        final userSnapshot = await transaction.get(userRef);
-        if (!userSnapshot.exists) {
-          return {'success': false, 'message': 'Profilo utente non trovato'};
-        }
-
-        final currentPoints = userSnapshot.data()?['points'] ?? userSnapshot.data()?['pointsBalance'] ?? 0;
-        if (currentPoints < reward.pointsCost) {
-          return {'success': false, 'message': 'Punti insufficienti per questo premio'};
-        }
-
-        // 1. Deduct points from user balance
-        final newBalance = currentPoints - reward.pointsCost;
-        transaction.update(userRef, {'points': newBalance});
-
-        // 2. Create the coupon
-        final couponId = 'CPN-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-${reward.id.toUpperCase()}';
-        final coupon = Coupon(
-          id: couponId,
-          rewardId: reward.id,
-          rewardTitle: reward.title,
-          pointsSpent: reward.pointsCost,
-          userId: userId,
-          claimDate: DateTime.now(),
-          expiryDate: DateTime.now().add(const Duration(days: 30)),
-          status: 'active',
-        );
-        transaction.set(couponRef, coupon.toMap());
-
-        // 3. Write points transaction log
-        final tx = TransactionModel(
-          id: txRef.id,
-          userId: userId,
-          points: reward.pointsCost,
-          type: 'redeem',
-          description: 'Riscatto ${reward.title}',
-          date: DateTime.now(),
-        );
-        transaction.set(txRef, tx.toMap());
-
-        return {'success': true, 'coupon': coupon};
-      });
-
-      return result;
+      return await _processRewardRedemption(
+        userId: userId,
+        rewardId: reward.id,
+        rewardTitle: reward.title,
+        pointsCost: reward.pointsCost,
+        couponInitialStatus: 'active',
+        transactionDescription: 'Riscatto ${reward.title}',
+      );
     } catch (e) {
       print("Errore nel riscatto del premio: $e");
       return {'success': false, 'message': 'Si è verificato un errore: $e'};
@@ -280,54 +297,14 @@ class FirestoreService {
         rewardTitle = rewardData['title'] as String;
       }
 
-      final userRef = _db.collection('users').doc(clientId);
-      final couponRef = _db.collection('coupons').doc();
-      final txRef = userRef.collection('transactions').doc();
-
-      final result = await _db.runTransaction<Map<String, dynamic>>((transaction) async {
-        final userSnapshot = await transaction.get(userRef);
-        if (!userSnapshot.exists) {
-          return {'success': false, 'message': 'Profilo cliente non trovato'};
-        }
-
-        final currentPoints = userSnapshot.data()?['points'] ?? userSnapshot.data()?['pointsBalance'] ?? 0;
-        if (currentPoints < pointsCost) {
-          return {'success': false, 'message': 'Il cliente non ha abbastanza punti ($currentPoints/$pointsCost)'};
-        }
-
-        // 1. Deduct points from user balance
-        final newBalance = currentPoints - pointsCost;
-        transaction.update(userRef, {'points': newBalance});
-
-        // 2. Create the coupon (already used, since it's delivered at the counter)
-        final couponId = 'CPN-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-${rewardId.toUpperCase()}';
-        final coupon = Coupon(
-          id: couponId,
-          rewardId: rewardId,
-          rewardTitle: rewardTitle,
-          pointsSpent: pointsCost,
-          userId: clientId,
-          claimDate: DateTime.now(),
-          expiryDate: DateTime.now(),
-          status: 'used',
-        );
-        transaction.set(couponRef, coupon.toMap());
-
-        // 3. Write points transaction log
-        final tx = TransactionModel(
-          id: txRef.id,
-          userId: clientId,
-          points: pointsCost,
-          type: 'redeem',
-          description: 'Riscatto $rewardTitle',
-          date: DateTime.now(),
-        );
-        transaction.set(txRef, tx.toMap());
-
-        return {'success': true, 'rewardTitle': rewardTitle};
-      });
-
-      return result;
+      return await _processRewardRedemption(
+        userId: clientId,
+        rewardId: rewardId,
+        rewardTitle: rewardTitle,
+        pointsCost: pointsCost,
+        couponInitialStatus: 'used',
+        transactionDescription: 'Riscatto Admin: $rewardTitle',
+      );
     } catch (e) {
       print("Errore nel riscatto admin del premio: $e");
       return {'success': false, 'message': 'Si è verificato un errore: $e'};

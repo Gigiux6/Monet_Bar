@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: Text('Errore caricamento profilo'));
           }
 
-          if (user.role == 'client' && !user.isTemporary && user.importantDates['onboarding_completed'] != true) {
+          if (user.role == 'client' && !user.isTemporary && !user.onboardingCompleted) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 Navigator.of(context).pushReplacement(
@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Column(
                             children: [
                               Text(
-                                '${user.pointsBalance}',
+                                '${user.points}',
                                 style: GoogleFonts.playfairDisplay(
                                   color: AppTheme.backgroundDark,
                                   fontSize: 34,

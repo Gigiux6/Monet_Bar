@@ -206,7 +206,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                               ),
                             ),
                             Text(
-                              '${user.pointsBalance}',
+                              '${user.points}',
                               style: GoogleFonts.playfairDisplay(
                                 color: AppTheme.accentGold,
                                 fontSize: 24,

@@ -7,12 +7,7 @@ import '../../data/services/firestore_service.dart';
 import '../main_navigation.dart';
 
 class BirthdayPickerScreen extends StatefulWidget {
-  final bool isCancellable;
-
-  const BirthdayPickerScreen({
-    super.key,
-    this.isCancellable = true,
-  });
+  const BirthdayPickerScreen({super.key});
 
   @override
   State<BirthdayPickerScreen> createState() => _BirthdayPickerScreenState();
@@ -24,6 +19,7 @@ class _BirthdayPickerScreenState extends State<BirthdayPickerScreen> {
   DateTime? _anniversary;
 
   bool _isLoading = false;
+
 
   Future<void> _selectDate(BuildContext context, {required Function(DateTime) onSelected, DateTime? initialDate}) async {
     final DateTime? picked = await showDatePicker(
@@ -78,6 +74,7 @@ class _BirthdayPickerScreenState extends State<BirthdayPickerScreen> {
       await FirestoreService().updateUser(user.id, {
         'importantDates': importantDates,
         'recurringDatesMmDd': recurringDatesMmDd,
+        'onboardingCompleted': true,
       });
 
       if (mounted) {
@@ -101,10 +98,6 @@ class _BirthdayPickerScreenState extends State<BirthdayPickerScreen> {
     }
   }
 
-  void _skip() {
-    // Save empty to prevent asking again
-    _saveDates();
-  }
 
   Widget _buildDateSelector(String title, DateTime? selectedDate, Function(DateTime) onSelected) {
     return Container(
@@ -141,16 +134,7 @@ class _BirthdayPickerScreenState extends State<BirthdayPickerScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          if (widget.isCancellable)
-            TextButton(
-              onPressed: _isLoading ? null : _skip,
-              child: Text(
-                'SALTA',
-                style: GoogleFonts.outfit(color: AppTheme.textMuted, fontWeight: FontWeight.bold),
-              ),
-            ),
-        ],
+        automaticallyImplyLeading: false,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.accentGold))
@@ -171,7 +155,7 @@ class _BirthdayPickerScreenState extends State<BirthdayPickerScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Inserisci le tue date importanti. Ti riserveremo delle sorprese speciali per festeggiare insieme!',
+                    'Inserisci le tue date importanti. Queste date ci serviranno per sbloccare sconti e fantastici regali speciali!',
                     style: GoogleFonts.outfit(
                       color: AppTheme.textSecondary,
                       fontSize: 16,
@@ -187,7 +171,7 @@ class _BirthdayPickerScreenState extends State<BirthdayPickerScreen> {
                   
                   const SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: (_birthday == null && _nameDay == null && _anniversary == null) ? null : _saveDates,
+                    onPressed: (_birthday == null || _nameDay == null || _anniversary == null) ? null : _saveDates,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: AppTheme.accentGold,

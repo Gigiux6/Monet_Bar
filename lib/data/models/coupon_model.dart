@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Coupon {
   final String id;
   final String rewardId;
@@ -43,20 +45,20 @@ class Coupon {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      // 'id': id, RIMOSSO: Evitiamo di duplicare l'ID dentro il payload Firestore
       'rewardId': rewardId,
       'rewardTitle': rewardTitle,
       'pointsSpent': pointsSpent,
       'userId': userId,
-      'claimDate': claimDate.toIso8601String(),
-      'expiryDate': expiryDate.toIso8601String(),
+      'claimDate': Timestamp.fromDate(claimDate),
+      'expiryDate': Timestamp.fromDate(expiryDate),
       'status': status,
     };
   }
 
-  factory Coupon.fromMap(Map<String, dynamic> map) {
+  factory Coupon.fromMap(Map<String, dynamic> map, String docId) {
     return Coupon(
-      id: map['id'] ?? '',
+      id: docId,
       rewardId: map['rewardId'] ?? '',
       rewardTitle: map['rewardTitle'] ?? '',
       pointsSpent: map['pointsSpent'] ?? 0,
@@ -69,17 +71,15 @@ class Coupon {
 
   static DateTime _parseDate(dynamic date) {
     if (date == null) return DateTime.now();
-    if (date is String) return DateTime.parse(date);
+    if (date is Timestamp) return date.toDate();
     if (date is DateTime) return date;
+    if (date is String) return DateTime.tryParse(date) ?? DateTime.now();
+    
+    // Fallback sicuro
     try {
-      // Handles Firestore Timestamp dynamically to keep models package-independent
-      return (date as dynamic).toDate();
+      return DateTime.fromMillisecondsSinceEpoch((date as dynamic).millisecondsSinceEpoch);
     } catch (_) {
-      try {
-        return DateTime.fromMillisecondsSinceEpoch((date as dynamic).millisecondsSinceEpoch);
-      } catch (_) {
-        return DateTime.now();
-      }
+      return DateTime.now();
     }
   }
 }

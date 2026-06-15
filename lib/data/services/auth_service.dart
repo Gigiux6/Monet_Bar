@@ -42,7 +42,7 @@ class AuthService {
             id: firebaseUser.uid,
             name: firebaseUser.displayName ?? 'Cliente Monet',
             email: firebaseUser.email ?? '',
-            pointsBalance: 0,
+            points: 0,
             isTemporary: true,
           );
         }
@@ -58,7 +58,7 @@ class AuthService {
       id: firebaseUser.uid,
       name: firebaseUser.displayName ?? 'Cliente Monet',
       email: firebaseUser.email ?? '',
-      pointsBalance: 0, // Points require fetching asynchronously, use stream for real-time points.
+      points: 0, // Points require fetching asynchronously, use stream for real-time points.
     );
   }
 
@@ -151,6 +151,49 @@ class AuthService {
     }
   }
 
+  /// Modifica la password dell'utente. Richiede la vecchia password per ri-autenticazione.
+  /// Controlla anche che l'utente stia usando l'autenticazione tramite email/password.
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await RateLimiterService().checkAuthLimit();
+    final user = _auth.currentUser;
+    
+    if (user == null) {
+      throw 'Utente non autenticato.';
+    }
+    if (user.email == null || user.email!.isEmpty) {
+      throw 'Il tuo account non utilizza un indirizzo email.';
+    }
+
+    // Controlla se è loggato con social
+    final providerData = user.providerData;
+    final isEmailProvider = providerData.any((p) => p.providerId == 'password');
+    if (!isEmailProvider) {
+      throw "Non puoi modificare la password perché hai effettuato l'accesso con Google o Facebook.";
+    }
+
+    try {
+      // Ri-autenticazione
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+      
+      // Aggiornamento password
+      await user.updatePassword(newPassword);
+      
+    } on FirebaseAuthException catch (e) {
+      await RateLimiterService().recordAuthFailure();
+      throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
+    } catch (e) {
+      await RateLimiterService().recordAuthFailure();
+      throw 'Errore durante la modifica della password: $e';
+    }
+  }
+
   /// Register using Username, Email and Password with points initialization and error mapping.
   Future<UserModel?> register(String username, String email, String password) async {
     await RateLimiterService().checkAuthLimit();
@@ -173,7 +216,7 @@ class AuthService {
         id: credential.user!.uid,
         name: username,
         email: email,
-        pointsBalance: 0,
+        points: 0,
       );
       
       await _db.collection('usernames').doc(username).set({
@@ -240,73 +283,7 @@ class AuthService {
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) return null;
 
-      // Workaround for Flutter Web Firestore websocket sync delay after OAuth sign in
-      // Using snapshots().first instead of get() often bypasses the silent hang bug
-      final userDoc = await _db.collection('users').doc(firebaseUser.uid).snapshots().first.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw 'La connessione al database sta impiegando troppo tempo. Riprova.',
-      );
-      if (userDoc.exists) {
-        final data = userDoc.data()!;
-        final userModel = UserModel.fromMap({
-          'id': firebaseUser.uid,
-          ...data,
-        });
-        
-        if (data['hasGoogleAuth'] != true) {
-          // Primo login Google per un account pre-esistente (Auto-Link)
-          await _db.collection('users').doc(firebaseUser.uid).update({'hasGoogleAuth': true}).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => throw 'Timeout aggiornamento dati utente. Riprova.',
-          );
-          userModel.isAutoLinked = true;
-        }
-        
-        // Iscrizione al topic utente per Notifiche Push Personali
-        NotificationService().subscribeToUserTopic(firebaseUser.uid);
-
-        return userModel;
-      }
-
-      // Se l'utente non esiste, procediamo con la registrazione silente.
-      // 1. Genera Username
-      String baseUsername = (firebaseUser.displayName?.isNotEmpty ?? false)
-          ? firebaseUser.displayName!.replaceAll(' ', '_').toLowerCase()
-          : (firebaseUser.email?.split('@')[0] ?? 'user').toLowerCase();
-      
-      baseUsername = baseUsername.replaceAll(RegExp(r'[^a-z0-9_]'), '');
-      if (baseUsername.isEmpty) baseUsername = 'user';
-
-      // 2. Risolvi i conflitti di Username
-      String finalUsername = baseUsername;
-      int counter = 1;
-      while (await isUsernameTaken(finalUsername)) {
-        finalUsername = '$baseUsername$counter';
-        counter++;
-      }
-
-      // 3. Crea utente e mappa Username
-      final newUser = UserModel(
-        id: firebaseUser.uid,
-        name: finalUsername,
-        email: firebaseUser.email ?? '',
-        pointsBalance: 0, // Inizializza i punti a 0 per le regole Firestore
-      );
-
-      await _db.collection('usernames').doc(finalUsername).set({
-        'email': firebaseUser.email ?? '',
-        'uid': firebaseUser.uid,
-      });
-
-      await _db.collection('users').doc(firebaseUser.uid).set({
-        ...newUser.toMap(),
-        'hasGoogleAuth': true,
-      });
-
-      // Iscrizione al topic utente per Notifiche Push Personali
-      NotificationService().subscribeToUserTopic(firebaseUser.uid);
-
-      return newUser;
+      return await _handleOAuthUserSync(firebaseUser, authProviderKey: 'hasGoogleAuth');
     } on FirebaseAuthException catch (e, stacktrace) {
       print('--- ERROR DURING GOOGLE SIGN IN (FirebaseAuthException) ---');
       print('Error Code: ${e.code}');
@@ -354,66 +331,7 @@ class AuthService {
         final firebaseUser = userCredential.user;
         if (firebaseUser == null) return null;
 
-        // Workaround for Flutter Web Firestore websocket sync delay
-        final userDoc = await _db.collection('users').doc(firebaseUser.uid).snapshots().first.timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => throw 'La connessione al database sta impiegando troppo tempo. Riprova.',
-        );
-
-        if (userDoc.exists) {
-          final data = userDoc.data()!;
-          final userModel = UserModel.fromMap({
-            'id': firebaseUser.uid,
-            ...data,
-          });
-
-          if (data['hasFacebookAuth'] != true) {
-            await _db.collection('users').doc(firebaseUser.uid).update({'hasFacebookAuth': true}).timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => throw 'Timeout aggiornamento dati utente. Riprova.',
-            );
-            userModel.isAutoLinked = true;
-          }
-
-          NotificationService().subscribeToUserTopic(firebaseUser.uid);
-          return userModel;
-        }
-
-        // Se l'utente non esiste, procediamo con la registrazione silente.
-        String baseUsername = (firebaseUser.displayName?.isNotEmpty ?? false)
-            ? firebaseUser.displayName!.replaceAll(' ', '_').toLowerCase()
-            : (firebaseUser.email?.split('@')[0] ?? 'fb_user').toLowerCase();
-        
-        baseUsername = baseUsername.replaceAll(RegExp(r'[^a-z0-9_]'), '');
-        if (baseUsername.isEmpty) baseUsername = 'fb_user';
-
-        String finalUsername = baseUsername;
-        int counter = 1;
-        while (await isUsernameTaken(finalUsername)) {
-          finalUsername = '$baseUsername$counter';
-          counter++;
-        }
-
-        final newUser = UserModel(
-          id: firebaseUser.uid,
-          name: finalUsername,
-          email: firebaseUser.email ?? '',
-          pointsBalance: 0,
-        );
-
-        await _db.collection('usernames').doc(finalUsername).set({
-          'email': firebaseUser.email ?? '',
-          'uid': firebaseUser.uid,
-        });
-
-        await _db.collection('users').doc(firebaseUser.uid).set({
-          ...newUser.toMap(),
-          'hasFacebookAuth': true,
-        });
-
-        NotificationService().subscribeToUserTopic(firebaseUser.uid);
-
-        return newUser;
+        return await _handleOAuthUserSync(firebaseUser, authProviderKey: 'hasFacebookAuth');
       } else if (result.status == LoginStatus.cancelled) {
         print('--- FACEBOOK LOGIN CANCELLED ---');
         return null;
@@ -463,60 +381,57 @@ class AuthService {
     }
   }
 
-  /// Delete the current user's account and data.
+  /// Deletes the current user's account and all their data.
   Future<void> deleteAccount() async {
-    final user = _auth.currentUser;
-    if (user == null) throw 'Utente non autenticato.';
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) throw 'Utente non autenticato.';
+
+    // Controllo preventivo: se l'accesso è avvenuto più di 5 minuti fa, Firebase Auth rifiuterà l'eliminazione.
+    // Fermiamo l'operazione prima di toccare Firestore.
+    final lastSignIn = firebaseUser.metadata.lastSignInTime;
+    if (lastSignIn != null && DateTime.now().difference(lastSignIn).inMinutes > 5) {
+      throw 'Per motivi di sicurezza, effettua il logout e accedi di nuovo prima di eliminare l\'account.';
+    }
 
     try {
-      // 1. Get username to delete it from usernames collection
-      final userDoc = await _db.collection('users').doc(user.uid).get();
+      // Step 1: Fetch all Firestore data to delete
+      final userDoc = await _db.collection('users').doc(firebaseUser.uid).get();
       final username = userDoc.data()?['name'] as String?;
+      final transactionsSnapshot = await _db.collection('users').doc(firebaseUser.uid).collection('transactions').get();
+      final couponsSnapshot = await _db.collection('coupons').where('userId', isEqualTo: firebaseUser.uid).get();
 
-      // 2. Fetch all user transactions and coupons to delete them
-      final transactionsSnapshot = await _db.collection('users').doc(user.uid).collection('transactions').get();
-      final couponsSnapshot = await _db.collection('coupons').where('userId', isEqualTo: user.uid).get();
-
-      // 3. Delete Firestore data via batch
+      // Step 2: Delete all Firestore data in a batch
       final batch = _db.batch();
       if (username != null && username.isNotEmpty) {
         batch.delete(_db.collection('usernames').doc(username));
       }
-      batch.delete(_db.collection('users').doc(user.uid));
-
-      // Delete transactions
+      batch.delete(_db.collection('users').doc(firebaseUser.uid));
       for (var doc in transactionsSnapshot.docs) {
         batch.delete(doc.reference);
       }
-
-      // Delete coupons
       for (var doc in couponsSnapshot.docs) {
         batch.delete(doc.reference);
       }
-
       await batch.commit();
 
-      // 3. Delete auth account
-      await user.delete();
+      // Step 3: Delete the Firebase Auth account
+      await firebaseUser.delete();
 
-      // Clear Google session if present
-      try {
-        await GoogleSignIn().signOut();
-      } catch (_) {}
-      
-      // Clear Facebook session if present
-      try {
-        await FacebookAuth.instance.logOut();
-      } catch (_) {}
+      // Step 4: Clear social sessions
+      try { await GoogleSignIn().signOut(); } catch (_) {}
+      try { await FacebookAuth.instance.logOut(); } catch (_) {}
+
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        throw 'Per motivi di sicurezza, fai il logout e accedi di nuovo prima di eliminare l\'account.';
+        throw 'Per motivi di sicurezza, effettua il logout e accedi di nuovo prima di eliminare l\'account.';
       }
       throw _mapFirebaseAuthError(e);
     } catch (e) {
+      if (e is String) rethrow;
       throw 'Errore durante l\'eliminazione dell\'account: $e';
     }
   }
+
 
   /// Updates the user's username in both /usernames and /users collections.
   Future<void> updateUsername(String newUsername, String oldUsername) async {
@@ -551,6 +466,69 @@ class AuthService {
     batch.update(userRef, {'name': newUsername});
 
     await batch.commit();
+  }
+
+  /// Gestisce la creazione o l'aggiornamento del profilo su Firestore dopo un login OAuth.
+  Future<UserModel> _handleOAuthUserSync(User firebaseUser, {required String authProviderKey}) async {
+    // 1. Controlla se l'utente esiste già
+    final userDoc = await _db.collection('users').doc(firebaseUser.uid).snapshots().first.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => throw 'La connessione al database sta impiegando troppo tempo. Riprova.',
+    );
+
+    if (userDoc.exists) {
+      final data = userDoc.data()!;
+      var userModel = UserModel.fromMap({'id': firebaseUser.uid, ...data});
+
+      // Aggiorna il flag del provider se mancante (Auto-Link)
+      if (data[authProviderKey] != true) {
+        await _db.collection('users').doc(firebaseUser.uid).update({authProviderKey: true}).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw 'Timeout aggiornamento dati utente. Riprova.',
+        );
+        userModel = userModel.copyWith(isAutoLinked: true);
+      }
+      NotificationService().subscribeToUserTopic(firebaseUser.uid);
+      return userModel;
+    }
+
+    // 2. L'utente non esiste: Generazione Username Silente
+    String baseUsername = (firebaseUser.displayName?.isNotEmpty ?? false)
+        ? firebaseUser.displayName!.replaceAll(' ', '_').toLowerCase()
+        : (firebaseUser.email?.split('@')[0] ?? 'user').toLowerCase();
+    
+    baseUsername = baseUsername.replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    if (baseUsername.isEmpty) baseUsername = 'user';
+
+    String finalUsername = baseUsername;
+    int counter = 1;
+    
+    while (await isUsernameTaken(finalUsername)) {
+      finalUsername = '$baseUsername$counter';
+      counter++;
+    }
+
+    // 3. Creazione del nuovo profilo
+    final newUser = UserModel(
+      id: firebaseUser.uid,
+      name: finalUsername,
+      email: firebaseUser.email ?? '',
+      points: 0,
+    );
+
+    final batch = _db.batch();
+    batch.set(_db.collection('usernames').doc(finalUsername), {
+      'email': firebaseUser.email ?? '',
+      'uid': firebaseUser.uid,
+    });
+    batch.set(_db.collection('users').doc(firebaseUser.uid), {
+      ...newUser.toMap(),
+      authProviderKey: true,
+    });
+    await batch.commit();
+
+    NotificationService().subscribeToUserTopic(firebaseUser.uid);
+    return newUser;
   }
 
   /// Map Firebase Auth exceptions to friendly Italian error messages (from Guess Me logic).

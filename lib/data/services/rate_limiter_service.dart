@@ -14,34 +14,36 @@ class RateLimiterService {
   RateLimiterService._internal();
 
   static const String _authFailedKey = 'auth_failed_timestamps';
-  static const String _generalRequestsKey = 'general_requests_timestamps';
-
   static const int _maxAuthAttempts = 5;
   static const Duration _authWindow = Duration(minutes: 15);
 
   static const int _maxGeneralRequests = 30;
   static const Duration _generalWindow = Duration(minutes: 1);
 
-  Future<void> _cleanOldTimestamps(SharedPreferences prefs, String key, Duration window) async {
+  // --- STATO IN-MEMORY PER I LIMITI GENERALI (Altissime Performance) ---
+  final List<DateTime> _generalRequestsTimestamps = [];
+
+  // --- HELPER PER AUTH (SharedPreferences) ---
+  Future<void> _cleanOldAuthTimestamps(SharedPreferences prefs) async {
     final now = DateTime.now();
-    final List<String> timestampsStr = prefs.getStringList(key) ?? [];
+    final List<String> timestampsStr = prefs.getStringList(_authFailedKey) ?? [];
     
     final validTimestamps = timestampsStr.where((ts) {
       final dateTime = DateTime.tryParse(ts);
       if (dateTime == null) return false;
-      return now.difference(dateTime) <= window;
+      return now.difference(dateTime) <= _authWindow;
     }).toList();
 
     if (validTimestamps.length != timestampsStr.length) {
-      await prefs.setStringList(key, validTimestamps);
+      await prefs.setStringList(_authFailedKey, validTimestamps);
     }
   }
 
-  /// Verifica se è possibile effettuare un tentativo di autenticazione.
-  /// Se bloccato, lancia una RateLimitExceededException.
+  // --- AUTENTICAZIONE (Manteniamo la persistenza sul disco) ---
+
   Future<void> checkAuthLimit() async {
     final prefs = await SharedPreferences.getInstance();
-    await _cleanOldTimestamps(prefs, _authFailedKey, _authWindow);
+    await _cleanOldAuthTimestamps(prefs);
     
     final List<String> timestampsStr = prefs.getStringList(_authFailedKey) ?? [];
     if (timestampsStr.length >= _maxAuthAttempts) {
@@ -58,37 +60,34 @@ class RateLimiterService {
     }
   }
 
-  /// Registra un tentativo fallito di autenticazione.
   Future<void> recordAuthFailure() async {
     final prefs = await SharedPreferences.getInstance();
-    await _cleanOldTimestamps(prefs, _authFailedKey, _authWindow);
+    await _cleanOldAuthTimestamps(prefs);
     
     final List<String> timestampsStr = prefs.getStringList(_authFailedKey) ?? [];
     timestampsStr.add(DateTime.now().toIso8601String());
     await prefs.setStringList(_authFailedKey, timestampsStr);
   }
 
-  /// Azzera i tentativi falliti di autenticazione (es. in caso di login con successo opzionale, 
-  /// anche se non strettamente necessario).
   Future<void> resetAuthFailures() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_authFailedKey);
   }
 
-  /// Verifica e registra una chiamata generica agli endpoint (Firestore/Functions).
-  /// Se bloccato, lancia una RateLimitExceededException.
-  Future<void> checkGeneralLimit() async {
-    final prefs = await SharedPreferences.getInstance();
-    await _cleanOldTimestamps(prefs, _generalRequestsKey, _generalWindow);
+  // --- RICHIESTE GENERALI (Spostate in RAM per evitare I/O su disco) ---
 
-    final List<String> timestampsStr = prefs.getStringList(_generalRequestsKey) ?? [];
-    if (timestampsStr.length >= _maxGeneralRequests) {
+  Future<void> checkGeneralLimit() async {
+    final now = DateTime.now();
+    
+    // Pulisce in un istante le date vecchie direttamente in memoria
+    _generalRequestsTimestamps.removeWhere((dateTime) => now.difference(dateTime) > _generalWindow);
+
+    if (_generalRequestsTimestamps.length >= _maxGeneralRequests) {
       throw RateLimitExceededException(
         'Troppe richieste effettuate. Attendi un momento prima di riprovare.',
       );
     }
 
-    timestampsStr.add(DateTime.now().toIso8601String());
-    await prefs.setStringList(_generalRequestsKey, timestampsStr);
+    _generalRequestsTimestamps.add(now);
   }
 }
