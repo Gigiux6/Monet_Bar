@@ -161,61 +161,78 @@ class _AdminNewsScreenState extends State<AdminNewsScreen> {
             
             // Date removed as per request
 
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: AppTheme.glassCard(),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title, 
-                          style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        // Date removed as per request
-                        const SizedBox(height: 4),
-                        Text(
-                          content, 
-                          style: GoogleFonts.outfit(color: AppTheme.textSecondary, fontSize: 12), 
-                          maxLines: 2, 
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+            return GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: AppTheme.surfaceDark,
+                    title: Text(title, style: GoogleFonts.playfairDisplay(color: AppTheme.textCream)),
+                    content: SingleChildScrollView(child: Text(content, style: GoogleFonts.outfit(color: AppTheme.textSecondary))),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('Chiudi', style: GoogleFonts.outfit(color: AppTheme.accentGold)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: AppTheme.glassCard(),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title, 
+                            style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontSize: 16, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            content, 
+                            style: GoogleFonts.outfit(color: AppTheme.textSecondary, fontSize: 12), 
+                            maxLines: 2, 
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: isActive,
-                    activeColor: AppTheme.accentGold,
-                    onChanged: (val) {
-                      if (val && activeCount >= 3) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Puoi mostrare massimo 3 promozioni contemporaneamente. Spegnine una prima.',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                            ),
-                            backgroundColor: Colors.redAccent,
-                          )
-                        );
-                        return;
-                      }
-                      FirebaseFirestore.instance.collection('news').doc(doc.id).update({'is_active': val});
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_active, color: AppTheme.accentAmber),
-                    onPressed: () => _confirmSendNotification(title, content),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                    onPressed: () => _confirmDelete(doc.id),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: isActive,
+                      activeColor: AppTheme.accentGold,
+                      onChanged: (val) {
+                        if (val && activeCount >= 3) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Puoi mostrare massimo 3 promozioni contemporaneamente. Spegnine una prima.',
+                                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                              ),
+                              backgroundColor: Colors.redAccent,
+                            )
+                          );
+                          return;
+                        }
+                        FirebaseFirestore.instance.collection('news').doc(doc.id).update({'is_active': val});
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.notifications_active, color: AppTheme.accentAmber),
+                      onPressed: () => _confirmSendNotification(title, content),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: () => _confirmDelete(doc.id),
+                    ),
+                  ],
+                ),
               ),
             );
           },

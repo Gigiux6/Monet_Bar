@@ -40,6 +40,7 @@ class AdminMenuSettingsScreen extends StatelessWidget {
           ),
         ),
         body: const TabBarView(
+          physics: NeverScrollableScrollPhysics(),
           children: [
             _ProductsTab(),
             _RewardsTab(),
@@ -496,13 +497,48 @@ class _RewardsTabState extends State<_RewardsTab> {
             ),
           ),
         ),
-        const TabBar(
-          indicatorColor: AppTheme.accentGold,
-          labelColor: AppTheme.accentGold,
+        TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.center,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+          indicatorPadding: EdgeInsets.zero,
+          indicatorSize: TabBarIndicatorSize.label,
+          dividerColor: Colors.transparent,
+          indicator: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.accentGold,
+          ),
+          labelColor: AppTheme.backgroundDark,
           unselectedLabelColor: AppTheme.textSecondary,
+          labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          unselectedLabelStyle: GoogleFonts.outfit(),
           tabs: [
-            Tab(text: 'Classici'),
-            Tab(text: 'Speciali a Data Fissa'),
+            Tab(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
+                ),
+                child: const Align(
+                  alignment: Alignment.center,
+                  child: Text('Classici'),
+                ),
+              ),
+            ),
+            Tab(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
+                ),
+                child: const Align(
+                  alignment: Alignment.center,
+                  child: Text('Speciali a Data Fissa'),
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -785,4 +821,100 @@ class _RewardFormState extends State<_RewardForm> {
       ),
     );
   }
-}
+}    @override
+    Widget build(BuildContext context) {
+      return DefaultTabController(
+        length: MenuCategory.values.length,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: () => _showProductForm(),
+                icon: const Icon(Icons.add),
+                label: const Text('AGGIUNGI NUOVO PRODOTTO'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGold,
+                  foregroundColor: AppTheme.backgroundDark,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+            ),
+            TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+              indicatorPadding: EdgeInsets.zero,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.accentGold,
+              ),
+              labelColor: AppTheme.backgroundDark,
+              unselectedLabelColor: AppTheme.textSecondary,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              unselectedLabelStyle: GoogleFonts.outfit(),
+              tabs: MenuCategory.values.map((cat) => Tab(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
+                  ),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text(cat.displayName),
+                  ),
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: StreamBuilder<List<MenuItem>>(
+                stream: FirestoreService().menuItemsStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                  final allItems = snapshot.data ?? [];
+                  return TabBarView(
+                    children: MenuCategory.values.map((cat) {
+                      final list = allItems.where((item) => item.category == cat).toList();
+                      if (list.isEmpty) {
+                        return Center(child: Text('Nessun prodotto in questa categoria.', style: GoogleFonts.outfit(color: AppTheme.textMuted)));
+                      }
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: list.length,
+                        itemBuilder: (context, index) {
+                          final item = list[index];
+                          return Card(
+                            color: AppTheme.cardDark,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: AppTheme.accentGold.withOpacity(0.15)),
+                            ),
+                            child: ListTile(
+                              title: Text(item.name, style: GoogleFonts.outfit(color: AppTheme.textCream, fontWeight: FontWeight.bold)),
+                              subtitle: Text('${item.price.toStringAsFixed(2)}€', style: GoogleFonts.outfit(color: AppTheme.accentGold)),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent), onPressed: () => _showProductForm(item: item)),
+                                  IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () => _deleteProduct(item.id)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+
