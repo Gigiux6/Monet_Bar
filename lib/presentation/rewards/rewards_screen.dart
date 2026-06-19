@@ -119,7 +119,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
             textAlign: TextAlign.center,
           ),
           content: Text(
-            'Per poter riscattare i premi devi prima verificare il tuo indirizzo email. Controlla la tua casella di posta elettronica o ricarica il profilo se lo hai già fatto.',
+            'Per poter riscattare i premi devi prima verificare il tuo indirizzo email. Controlla la tua casella di posta elettronica (anche nello Spam) o ricarica il profilo se lo hai già fatto.',
             style: GoogleFonts.outfit(color: AppTheme.textSecondary),
             textAlign: TextAlign.center,
           ),

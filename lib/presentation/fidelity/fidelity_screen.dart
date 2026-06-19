@@ -29,7 +29,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
       await AuthService().resendVerificationEmail();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email inviata! Controlla la tua posta.'), backgroundColor: Colors.greenAccent)
+          const SnackBar(content: Text('Email inviata! Controlla la tua posta (anche nello Spam).'), backgroundColor: Colors.greenAccent)
         );
       }
     } catch (e) {
@@ -225,7 +225,7 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                                       const Icon(Icons.lock_outline, color: AppTheme.accentGold, size: 40),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Verifica l\'email per sbloccare la tessera',
+                                        'Verifica l\'email per sbloccare la tessera\n(Controlla anche nello Spam)',
                                         style: GoogleFonts.outfit(color: AppTheme.textCream, fontSize: 12, fontWeight: FontWeight.bold),
                                         textAlign: TextAlign.center,
                                       ),
