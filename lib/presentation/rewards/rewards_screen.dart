@@ -21,7 +21,6 @@ class RewardsScreen extends StatefulWidget {
 
 class _RewardsScreenState extends State<RewardsScreen> {
   bool _isProcessing = false;
-  int _selectedTab = 0;
 
   int _daysUntilNext(String dateStr, int validityDays) {
     try {
@@ -306,133 +305,125 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     centerTitle: true,
                     actions: const [AppBarLogo()],
                   ),
-                  body: Stack(
-                    children: [
-                      Column(
-                        children: [
-                          // Points summary card - fixed at top
-                          Container(
-                            width: double.infinity,
-                            margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(20),
-                            decoration: AppTheme.glassCard(borderColor: AppTheme.accentGold.withOpacity(0.3)),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'IL TUO BILANCIO PUNTI',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 2,
+                  body: DefaultTabController(
+                    length: 2,
+                    child: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            // Points summary card - fixed at top
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(20),
+                              decoration: AppTheme.glassCard(borderColor: AppTheme.accentGold.withOpacity(0.3)),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'IL TUO BILANCIO PUNTI',
+                                    style: GoogleFonts.outfit(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.stars, color: AppTheme.accentGold, size: 28),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${user.points}',
+                                        style: GoogleFonts.playfairDisplay(
+                                          color: AppTheme.textCream,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'punti',
+                                        style: GoogleFonts.outfit(
+                                          color: AppTheme.accentGold,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // TabBar
+                            TabBar(
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.center,
+                              labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                              indicatorPadding: EdgeInsets.zero,
+                              indicatorSize: TabBarIndicatorSize.label,
+                              dividerColor: Colors.transparent,
+                              indicator: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: AppTheme.accentGold,
+                              ),
+                              labelColor: AppTheme.backgroundDark,
+                              unselectedLabelColor: AppTheme.textSecondary,
+                              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                              unselectedLabelStyle: GoogleFonts.outfit(),
+                              tabs: [
+                                Tab(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
+                                    ),
+                                    child: const Align(
+                                      alignment: Alignment.center,
+                                      child: Text('Classici'),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.stars, color: AppTheme.accentGold, size: 28),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${user.points}',
-                                      style: GoogleFonts.playfairDisplay(
-                                        color: AppTheme.textCream,
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.w900,
-                                      ),
+                                Tab(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
                                     ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'punti',
-                                      style: GoogleFonts.outfit(
-                                        color: AppTheme.accentGold,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    child: const Align(
+                                      alignment: Alignment.center,
+                                      child: Text('Speciali'),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          // Custom Category Pills
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ChoiceChip(
-                                label: Text(
-                                  'Classici',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: _selectedTab == 0 ? FontWeight.bold : FontWeight.normal,
-                                    color: _selectedTab == 0 ? AppTheme.backgroundDark : AppTheme.textSecondary,
-                                  ),
-                                ),
-                                selected: _selectedTab == 0,
-                                selectedColor: AppTheme.accentGold,
-                                backgroundColor: AppTheme.cardDark,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      _selectedTab = 0;
-                                    });
-                                  }
-                                },
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(
-                                    color: _selectedTab == 0 ? AppTheme.accentGold : AppTheme.accentGold.withOpacity(0.15),
-                                  ),
-                                ),
-                                showCheckmark: false,
+                            const SizedBox(height: 12),
+                            // Expanded fills remaining screen height - TabBarView handles swipe
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  _buildRewardsList(baseRewards, user, coupons),
+                                  _buildRewardsList(specialRewards, user, coupons),
+                                ],
                               ),
-                              const SizedBox(width: 16),
-                              ChoiceChip(
-                                label: Text(
-                                  'Speciali',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: _selectedTab == 1 ? FontWeight.bold : FontWeight.normal,
-                                    color: _selectedTab == 1 ? AppTheme.backgroundDark : AppTheme.textSecondary,
-                                  ),
-                                ),
-                                selected: _selectedTab == 1,
-                                selectedColor: AppTheme.accentGold,
-                                backgroundColor: AppTheme.cardDark,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      _selectedTab = 1;
-                                    });
-                                  }
-                                },
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(
-                                    color: _selectedTab == 1 ? AppTheme.accentGold : AppTheme.accentGold.withOpacity(0.15),
-                                  ),
-                                ),
-                                showCheckmark: false,
+                            ),
+                          ],
+                        ),
+                        if (_isProcessing)
+                          Container(
+                            color: Colors.black54,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGold),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Expanded fills remaining screen height - lists scroll freely inside
-                          Expanded(
-                            child: _selectedTab == 0
-                                ? _buildRewardsList(baseRewards, user, coupons)
-                                : _buildRewardsList(specialRewards, user, coupons),
-                          ),
-                        ],
-                      ),
-                      if (_isProcessing)
-                        Container(
-                          color: Colors.black54,
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGold),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

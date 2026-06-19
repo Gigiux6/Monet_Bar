@@ -15,7 +15,6 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   final TextEditingController _searchController = TextEditingController();
-  MenuCategory? _selectedCategory;
   String _searchQuery = '';
 
   @override
@@ -278,132 +277,140 @@ class _MenuScreenState extends State<MenuScreen> {
         centerTitle: true,
         actions: const [AppBarLogo()],
       ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) {
-                setState(() {
-                  _searchQuery = val;
-                });
-              },
-              style: GoogleFonts.outfit(color: AppTheme.textCream),
-              decoration: InputDecoration(
-                hintText: 'Cerca piatti o ingredienti...',
-                prefixIcon: const Icon(Icons.search, color: AppTheme.accentGold),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppTheme.accentGold),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
+      body: DefaultTabController(
+        length: MenuCategory.values.length + 1,
+        child: Column(
+          children: [
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                  });
+                },
+                style: GoogleFonts.outfit(color: AppTheme.textCream),
+                decoration: InputDecoration(
+                  hintText: 'Cerca piatti o ingredienti...',
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.accentGold),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: AppTheme.accentGold),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                ),
               ),
             ),
-          ),
 
-          // Horizontal Category Pills
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: MenuCategory.values.length + 1,
-              itemBuilder: (context, index) {
-                final isAll = index == 0;
-                final cat = isAll ? null : MenuCategory.values[index - 1];
-                final isSelected = cat == _selectedCategory;
-                
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                  child: ChoiceChip(
-                    label: Text(
-                      isAll ? 'Tutti' : cat!.displayName,
-                      style: GoogleFonts.outfit(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? AppTheme.backgroundDark : AppTheme.textSecondary,
-                      ),
-                    ),
-                    selected: isSelected,
-                    selectedColor: AppTheme.accentGold,
-                    backgroundColor: AppTheme.cardDark,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedCategory = cat;
-                        });
-                      }
-                    },
-                    shape: RoundedRectangleBorder(
+            // TabBar
+            TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+              indicatorPadding: EdgeInsets.zero,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.accentGold,
+              ),
+              labelColor: AppTheme.backgroundDark,
+              unselectedLabelColor: AppTheme.textSecondary,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              unselectedLabelStyle: GoogleFonts.outfit(),
+              tabs: [
+                Tab(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isSelected ? AppTheme.accentGold : AppTheme.accentGold.withOpacity(0.15),
-                      ),
+                      border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
                     ),
-                    showCheckmark: false,
+                    child: const Align(
+                      alignment: Alignment.center,
+                      child: Text('Tutti'),
+                    ),
                   ),
-                );
-              },
+                ),
+                ...MenuCategory.values.map((cat) => Tab(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.accentGold.withOpacity(0.15)),
+                    ),
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Text(cat.displayName),
+                    ),
+                  ),
+                )),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Menu Items List
-          Expanded(
-            child: StreamBuilder<List<MenuItem>>(
-              stream: FirestoreService().menuItemsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Errore nel caricamento del menù',
-                      style: GoogleFonts.outfit(color: AppTheme.textCream),
-                    ),
-                  );
-                }
+            // Menu Items List
+            Expanded(
+              child: StreamBuilder<List<MenuItem>>(
+                stream: FirestoreService().menuItemsStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Errore nel caricamento del menù',
+                        style: GoogleFonts.outfit(color: AppTheme.textCream),
+                      ),
+                    );
+                  }
 
-                final List<MenuItem> rawList = snapshot.data ?? [];
-                
-                // Filter by category & search query
-                final List<MenuItem> filteredList = rawList.where((item) {
-                  final matchesCategory = _searchQuery.isNotEmpty || _selectedCategory == null || item.category == _selectedCategory;
-                  final matchesSearch = _searchQuery.isEmpty ||
-                      item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                      item.ingredients.any((ing) => ing.toLowerCase().contains(_searchQuery.toLowerCase()));
-                  return matchesCategory && matchesSearch;
-                }).toList();
+                  final List<MenuItem> rawList = snapshot.data ?? [];
+                  
+                  return TabBarView(
+                    children: List.generate(MenuCategory.values.length + 1, (tabIndex) {
+                      final cat = tabIndex == 0 ? null : MenuCategory.values[tabIndex - 1];
+                      
+                      // Filter by category & search query
+                      final List<MenuItem> filteredList = rawList.where((item) {
+                        final matchesCategory = cat == null || item.category == cat;
+                        final matchesSearch = _searchQuery.isEmpty ||
+                            item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                            item.ingredients.any((ing) => ing.toLowerCase().contains(_searchQuery.toLowerCase()));
+                        return matchesCategory && matchesSearch;
+                      }).toList();
 
-                if (filteredList.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off, size: 60, color: AppTheme.textMuted.withOpacity(0.5)),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Nessun elemento trovato per la ricerca',
-                          style: GoogleFonts.outfit(color: AppTheme.textMuted, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                      if (filteredList.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.search_off, size: 60, color: AppTheme.textMuted.withOpacity(0.5)),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Nessun elemento trovato',
+                                style: GoogleFonts.outfit(color: AppTheme.textMuted, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
-                  itemCount: filteredList.length,
-                  itemBuilder: (context, index) {
-                    final item = filteredList[index];
+                      return ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
+                        itemCount: filteredList.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredList[index];
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: AppTheme.glassCard(
@@ -505,11 +512,13 @@ class _MenuScreenState extends State<MenuScreen> {
                     );
                   },
                 );
-              },
-            ),
-          ),
-        ],
+              }),
+            );
+          },
+        ),
       ),
-    );
+    ],
+  ),
+),    );
   }
 }
