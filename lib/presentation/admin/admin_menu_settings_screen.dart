@@ -197,10 +197,11 @@ class _ProductsTabState extends State<_ProductsTab> {
                                 IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () => _deleteProduct(item.id)),
                               ],
                             ),
-                          );
-                        },
-                      );
-                    }).toList(),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
                   );
                 },
               ),
