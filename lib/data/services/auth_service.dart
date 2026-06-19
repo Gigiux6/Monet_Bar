@@ -62,6 +62,37 @@ class AuthService {
     );
   }
 
+  /// Check if the current user's email is verified.
+  bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
+
+  /// Reload the current user to refresh their auth properties (like emailVerified).
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
+  }
+
+  /// Resend the verification email to the current user.
+  Future<void> resendVerificationEmail() async {
+    await RateLimiterService().checkAuthLimit();
+    try {
+      final user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+      } else if (user != null && user.emailVerified) {
+        throw 'La tua email è già stata verificata.';
+      } else {
+        throw 'Nessun utente autenticato.';
+      }
+    } on FirebaseAuthException catch (e) {
+      await RateLimiterService().recordAuthFailure();
+      throw _mapFirebaseAuthError(e);
+    } on RateLimitExceededException {
+      rethrow;
+    } catch (e) {
+      await RateLimiterService().recordAuthFailure();
+      throw 'Errore durante l\'invio dell\'email: $e';
+    }
+  }
+
   /// Sign in using Email and Password with friendly error mapping.
   Future<UserModel?> login(String email, String password) async {
     await RateLimiterService().checkAuthLimit();

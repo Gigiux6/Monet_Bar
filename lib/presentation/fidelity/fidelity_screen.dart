@@ -16,6 +16,30 @@ class FidelityScreen extends StatefulWidget {
 
 class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isReloadingAuth = false;
+
+  Future<void> _handleReloadAuth() async {
+    setState(() { _isReloadingAuth = true; });
+    await AuthService().reloadUser();
+    setState(() { _isReloadingAuth = false; });
+  }
+
+  Future<void> _handleResendEmail() async {
+    try {
+      await AuthService().resendVerificationEmail();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email inviata! Controlla la tua posta.'), backgroundColor: Colors.greenAccent)
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.redAccent)
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -170,27 +194,63 @@ class _FidelityScreenState extends State<FidelityScreen> with SingleTickerProvid
                         ),
                         const SizedBox(height: 20),
 
-                        // QR Code Container
+                        // QR Code or Locked Container
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AuthService().isEmailVerified ? Colors.white : Colors.white10,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: QrImageView(
-                            data: user.name,
-                            version: QrVersions.auto,
-                            size: 160.0,
-                            gapless: false,
-                            eyeStyle: const QrEyeStyle(
-                              eyeShape: QrEyeShape.square,
-                              color: AppTheme.backgroundDark,
-                            ),
-                            dataModuleStyle: const QrDataModuleStyle(
-                              dataModuleShape: QrDataModuleShape.square,
-                              color: AppTheme.backgroundDark,
-                            ),
-                          ),
+                          child: AuthService().isEmailVerified
+                              ? QrImageView(
+                                  data: user.name,
+                                  version: QrVersions.auto,
+                                  size: 160.0,
+                                  gapless: false,
+                                  eyeStyle: const QrEyeStyle(
+                                    eyeShape: QrEyeShape.square,
+                                    color: AppTheme.backgroundDark,
+                                  ),
+                                  dataModuleStyle: const QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.square,
+                                    color: AppTheme.backgroundDark,
+                                  ),
+                                )
+                              : SizedBox(
+                                  width: 160.0,
+                                  height: 160.0,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.lock_outline, color: AppTheme.accentGold, size: 40),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Verifica l\'email per sbloccare la tessera',
+                                        style: GoogleFonts.outfit(color: AppTheme.textCream, fontSize: 12, fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      if (_isReloadingAuth)
+                                        const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentGold))
+                                      else
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            TextButton(
+                                              onPressed: _handleResendEmail,
+                                              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                                              child: Text('Invia di nuovo', style: GoogleFonts.outfit(color: AppTheme.textMuted, fontSize: 10)),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: _handleReloadAuth,
+                                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentGold, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0), minimumSize: const Size(0, 26)),
+                                              child: Text('Ho verificato', style: GoogleFonts.outfit(color: AppTheme.backgroundDark, fontSize: 10, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        )
+                                    ],
+                                  ),
+                                ),
                         ),
                         const SizedBox(height: 20),
 

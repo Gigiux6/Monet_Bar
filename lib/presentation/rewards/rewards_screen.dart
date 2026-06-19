@@ -103,6 +103,40 @@ class _RewardsScreenState extends State<RewardsScreen> {
     }
   }
 
+  void _showEmailVerificationPopup() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppTheme.accentGold, width: 1),
+          ),
+          title: Text(
+            'Verifica Richiesta',
+            style: GoogleFonts.playfairDisplay(color: AppTheme.textCream, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            'Per poter riscattare i premi devi prima verificare il tuo indirizzo email. Controlla la tua casella di posta elettronica o ricarica il profilo se lo hai già fatto.',
+            style: GoogleFonts.outfit(color: AppTheme.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'CHIUDI',
+                style: GoogleFonts.outfit(color: AppTheme.accentGold, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _handleRedeem(Reward reward) {
     final userId = AuthService().currentUser?.id;
     if (userId == null) return;
@@ -675,7 +709,11 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     child: ElevatedButton(
                       onPressed: canRedeem
                           ? () {
-                              _handleRedeem(reward);
+                              if (!AuthService().isEmailVerified) {
+                                _showEmailVerificationPopup();
+                              } else {
+                                _handleRedeem(reward);
+                              }
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
@@ -896,7 +934,11 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     onPressed: canRedeem
                         ? () {
                             Navigator.pop(context);
-                            _handleRedeem(reward);
+                            if (!AuthService().isEmailVerified) {
+                              _showEmailVerificationPopup();
+                            } else {
+                              _handleRedeem(reward);
+                            }
                           }
                         : null,
                     style: ElevatedButton.styleFrom(
